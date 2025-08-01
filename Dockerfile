@@ -1,5 +1,5 @@
 # Use a base image with Java 21 installed
-FROM openjdk:21-jdk-slim
+FROM openjdk:21-jdk-slim AS build
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -20,11 +20,17 @@ COPY src ./src
 # Package the application into a JAR file
 RUN ./mvnw package -DskipTests
 
+# Use a smaller base image for the final application
+FROM openjdk:21-jdk-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the Maven wrapper and the project definition file from the build stage
+COPY --from=build /app/target/UnravelDocs.jar UnravelDocs.jar
+
 # Expose the port your application runs on
 EXPOSE 8080
-
-# Copy the generated JAR file to the container
-COPY target/UnravelDocs.jar UnravelDocs.jar
 
 # Command to run the application
 ENTRYPOINT ["java", "-jar", "UnravelDocs.jar"]
