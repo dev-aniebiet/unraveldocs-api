@@ -21,6 +21,7 @@ import com.extractor.unraveldocs.utils.userlib.DateHelper;
 import com.extractor.unraveldocs.utils.userlib.UserLibrary;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,7 @@ public class SignupUserImpl implements SignupUserService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "superAdminExists", allEntries = true)
     public UnravelDocsDataResponse<SignupData> registerUser(SignUpRequestDto request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new ConflictException("Email already exists");
