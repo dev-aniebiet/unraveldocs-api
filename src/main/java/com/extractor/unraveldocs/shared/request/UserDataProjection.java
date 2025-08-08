@@ -1,4 +1,4 @@
-package com.extractor.unraveldocs.global.request;
+package com.extractor.unraveldocs.shared.request;
 
 import com.extractor.unraveldocs.auth.enums.Role;
 

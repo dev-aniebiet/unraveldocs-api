@@ -1,8 +1,8 @@
 package com.extractor.unraveldocs.subscription.service.impl;
 
 import com.extractor.unraveldocs.exceptions.custom.BadRequestException;
-import com.extractor.unraveldocs.global.response.ResponseBuilderService;
-import com.extractor.unraveldocs.global.response.UnravelDocsDataResponse;
+import com.extractor.unraveldocs.shared.response.ResponseBuilderService;
+import com.extractor.unraveldocs.shared.response.UnravelDocsDataResponse;
 import com.extractor.unraveldocs.subscription.dto.request.CreateSubscriptionPlanRequest;
 import com.extractor.unraveldocs.subscription.dto.response.SubscriptionPlansData;
 import com.extractor.unraveldocs.subscription.enums.BillingIntervalUnit;

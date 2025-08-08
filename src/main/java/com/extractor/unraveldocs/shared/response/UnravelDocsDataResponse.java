@@ -1,4 +1,4 @@
-package com.extractor.unraveldocs.global.response;
+package com.extractor.unraveldocs.shared.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

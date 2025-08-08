@@ -1,6 +1,6 @@
-package com.extractor.unraveldocs.global.response;
+package com.extractor.unraveldocs.shared.response;
 
-import com.extractor.unraveldocs.global.request.UserDataProjection;
+import com.extractor.unraveldocs.shared.request.UserDataProjection;
 import com.extractor.unraveldocs.user.model.User;
 
 import java.util.function.Supplier;

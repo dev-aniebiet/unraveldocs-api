@@ -1,4 +1,4 @@
-package com.extractor.unraveldocs.global.response;
+package com.extractor.unraveldocs.shared.response;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;

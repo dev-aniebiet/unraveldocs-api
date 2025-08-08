@@ -7,11 +7,11 @@ import com.extractor.unraveldocs.messaging.emailtemplates.UserEmailTemplateServi
 import com.extractor.unraveldocs.security.JwtTokenProvider;
 import com.extractor.unraveldocs.security.TokenBlacklistService;
 import com.extractor.unraveldocs.user.dto.request.ChangePasswordDto;
-import com.extractor.unraveldocs.global.response.UnravelDocsDataResponse;
+import com.extractor.unraveldocs.shared.response.UnravelDocsDataResponse;
 import com.extractor.unraveldocs.user.interfaces.userimpl.ChangePasswordService;
 import com.extractor.unraveldocs.user.model.User;
 import com.extractor.unraveldocs.user.repository.UserRepository;
-import com.extractor.unraveldocs.global.response.ResponseBuilderService;
+import com.extractor.unraveldocs.shared.response.ResponseBuilderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

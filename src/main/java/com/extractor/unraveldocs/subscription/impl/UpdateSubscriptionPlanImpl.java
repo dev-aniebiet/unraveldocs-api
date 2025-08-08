@@ -2,8 +2,8 @@ package com.extractor.unraveldocs.subscription.impl;
 
 import com.extractor.unraveldocs.exceptions.custom.BadRequestException;
 import com.extractor.unraveldocs.exceptions.custom.NotFoundException;
-import com.extractor.unraveldocs.global.response.ResponseBuilderService;
-import com.extractor.unraveldocs.global.response.UnravelDocsDataResponse;
+import com.extractor.unraveldocs.shared.response.ResponseBuilderService;
+import com.extractor.unraveldocs.shared.response.UnravelDocsDataResponse;
 import com.extractor.unraveldocs.subscription.dto.request.UpdateSubscriptionPlanRequest;
 import com.extractor.unraveldocs.subscription.dto.response.SubscriptionPlansData;
 import com.extractor.unraveldocs.subscription.enums.SubscriptionCurrency;
