@@ -1,4 +1,4 @@
-package com.extractor.unraveldocs.subscription.enums;
+package com.extractor.unraveldocs.subscription.datamodel;
 
 public enum BillingIntervalUnit {
     MONTH("month"),
