@@ -20,6 +20,15 @@ public class UserEmailTemplateService {
     @Value("${app.base.url}")
     private String baseUrl;
 
+    @Value("${spring.application.name}")
+    private String appName;
+
+    @Value("${app.support.email}")
+    private String supportEmail;
+
+    @Value("${app.unsubscribe.url}")
+    private String unsubscribeUrl;
+
     public void sendPasswordResetToken(String email, String firstName, String lastName, String token, String expiration) {
         String resetUrl = baseUrl + "/api/v1/user/reset-password?token=" + token + "&email=" + email;
 
@@ -54,7 +63,7 @@ public class UserEmailTemplateService {
         EmailMessage message = EmailMessage.builder()
                 .to(email)
                 .subject("Password Change Successful")
-                .templateName("successfulPasswordChange")
+                .templateName("changePassword")
                 .templateModel(Map.of(
                         "firstName", firstName,
                         "lastName", lastName
@@ -85,6 +94,31 @@ public class UserEmailTemplateService {
                 .templateName("accountDeleted")
                 .templateModel(Map.of())
                 .build();
+        emailOrchestratorService.sendEmail(message);
+    }
+
+    public void sendWelcomeEmail(String email, String firstName, String lastName) {
+        String appUrl = baseUrl;
+        String dashboardUrl = baseUrl + "/dashboard";
+        String recipientName = ((firstName != null ? firstName : "").trim() + " " + (lastName != null ? lastName : "").trim()).trim();
+        String finalUnsubscribeUrl = (unsubscribeUrl == null || unsubscribeUrl.isBlank())
+                ? baseUrl + "/unsubscribe"
+                : unsubscribeUrl;
+
+        EmailMessage message = EmailMessage.builder()
+                .to(email)
+                .subject("Welcome to " + appName)
+                .templateName("welcome")
+                .templateModel(Map.of(
+                        "recipientName", recipientName.isEmpty() ? "there" : recipientName,
+                        "appName", appName,
+                        "appUrl", appUrl,
+                        "dashboardUrl", dashboardUrl,
+                        "supportEmail", supportEmail,
+                        "unsubscribeUrl", finalUnsubscribeUrl
+                ))
+                .build();
+
         emailOrchestratorService.sendEmail(message);
     }
 }

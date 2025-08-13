@@ -1,4 +1,4 @@
-package com.extractor.unraveldocs.user.events;
+package com.extractor.unraveldocs.auth.events;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PasswordChangedEvent implements Serializable {
+public class WelcomeEvent implements Serializable {
     private String email;
     private String firstName;
     private String lastName;

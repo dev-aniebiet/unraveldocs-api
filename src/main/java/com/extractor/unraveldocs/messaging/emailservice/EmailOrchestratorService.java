@@ -2,7 +2,7 @@ package com.extractor.unraveldocs.messaging.emailservice;
 
 import com.extractor.unraveldocs.messaging.dto.EmailMessage;
 import com.extractor.unraveldocs.messaging.emailservice.mailgun.service.MailgunEmailService;
-import com.extractor.unraveldocs.messaging.thymleafservice.ThymleafEmailService;
+import com.extractor.unraveldocs.messaging.thymleafservice.ThymeleafEmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,10 +13,10 @@ import java.io.File;
 public class EmailOrchestratorService {
 
     private final MailgunEmailService mailgunEmailService;
-    private final ThymleafEmailService thymleafEmailService;
+    private final ThymeleafEmailService thymeleafEmailService;
 
     public void sendEmail(EmailMessage emailMessage) {
-        String htmlBody = thymleafEmailService.createEmail(
+        String htmlBody = thymeleafEmailService.createEmail(
                 emailMessage.getTemplateName(),
                 emailMessage.getTemplateModel()
         );
@@ -29,7 +29,7 @@ public class EmailOrchestratorService {
     }
 
     public void sendEmailWithAttachment(EmailMessage emailMessage, File attachment) {
-        String htmlBody = thymleafEmailService.createEmail(
+        String htmlBody = thymeleafEmailService.createEmail(
                 emailMessage.getTemplateName(),
                 emailMessage.getTemplateModel()
         );

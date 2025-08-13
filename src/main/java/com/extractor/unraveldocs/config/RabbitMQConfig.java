@@ -1,6 +1,7 @@
 package com.extractor.unraveldocs.config;
 
 import com.extractor.unraveldocs.auth.events.UserRegisteredEvent;
+import com.extractor.unraveldocs.auth.events.WelcomeEvent;
 import com.extractor.unraveldocs.user.events.*;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.*;
@@ -149,11 +150,13 @@ public class RabbitMQConfig {
 
         // Map event types to their specific payload classes, not BaseEvent
         idClassMapping.put("UserRegistered", UserRegisteredEvent.class);
+        idClassMapping.put("UserRegisteredEvent", UserRegisteredEvent.class);
         idClassMapping.put("UserDeletionScheduled", UserDeletionScheduledEvent.class);
         idClassMapping.put("UserDeleted", UserDeletedEvent.class);
         idClassMapping.put("PasswordChanged", PasswordChangedEvent.class);
         idClassMapping.put("PasswordResetRequested", PasswordResetEvent.class);
         idClassMapping.put("PasswordResetSuccessful", PasswordResetSuccessfulEvent.class);
+        idClassMapping.put("WelcomeEvent", WelcomeEvent.class);
 
         classMapper.setIdClassMapping(idClassMapping);
         classMapper.setTrustedPackages("*");

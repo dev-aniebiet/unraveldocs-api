@@ -19,16 +19,12 @@ public class PasswordChangedEventHandler implements EventHandler<PasswordChanged
     @Override
     public void handleEvent(PasswordChangedEvent event) {
         log.info("Processing PasswordChangedEvent for email: {}", sanitizeLogging.sanitizeLogging(event.getEmail()));
-        try {
-            userEmailTemplateService.sendSuccessfulPasswordChange(
-                    event.getEmail(),
-                    event.getFirstName(),
-                    event.getLastName()
-            );
-            log.info("Sent password changed notification email to: {}", sanitizeLogging.sanitizeLogging(event.getEmail()));
-        } catch (Exception e) {
-            log.error("Failed to send password changed notification email to {}: {}", sanitizeLogging.sanitizeLogging(event.getEmail()), e.getMessage(), e);
-        }
+        userEmailTemplateService.sendSuccessfulPasswordChange(
+                event.getEmail(),
+                event.getFirstName(),
+                event.getLastName()
+        );
+        log.info("Sent password changed notification email to: {}", sanitizeLogging.sanitizeLogging(event.getEmail()));
     }
 
     @Override

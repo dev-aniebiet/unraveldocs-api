@@ -3,6 +3,7 @@ package com.extractor.unraveldocs.auth.impl;
 import com.extractor.unraveldocs.auth.dto.request.ResendEmailVerificationDto;
 import com.extractor.unraveldocs.auth.datamodel.VerifiedStatus;
 import com.extractor.unraveldocs.auth.events.UserRegisteredEvent;
+import com.extractor.unraveldocs.auth.events.WelcomeEvent;
 import com.extractor.unraveldocs.auth.interfaces.EmailVerificationService;
 import com.extractor.unraveldocs.auth.mappers.UserEventMapper;
 import com.extractor.unraveldocs.auth.model.UserVerification;
@@ -126,7 +127,31 @@ public class EmailVerificationImpl implements EmailVerificationService {
         user.setVerified(true);
         user.setActive(true);
 
-        userRepository.save(user);
+        User updatedUser = userRepository.save(user);
+
+        // Registering a synchronization to publish the event after commit
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                WelcomeEvent welcomeEvent = new WelcomeEvent(
+                        updatedUser.getEmail(),
+                        updatedUser.getFirstName(),
+                        updatedUser.getLastName()
+                );
+                EventMetadata metadata = EventMetadata.builder()
+                        .eventType("WelcomeEvent")
+                        .eventSource("EmailVerificationImpl")
+                        .eventTimestamp(System.currentTimeMillis())
+                        .correlationId(UUID.randomUUID().toString())
+                        .build();
+                BaseEvent<WelcomeEvent> event = new BaseEvent<>(metadata, welcomeEvent);
+                eventPublisherService.publishEvent(
+                        RabbitMQConfig.USER_EVENTS_EXCHANGE,
+                        "user.welcome",
+                        event
+                );
+            }
+        });
 
         return responseBuilder.buildUserResponse(
                 null, HttpStatus.OK, "Email verified successfully");

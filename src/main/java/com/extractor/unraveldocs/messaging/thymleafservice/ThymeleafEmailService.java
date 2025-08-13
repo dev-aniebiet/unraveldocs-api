@@ -9,7 +9,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class ThymleafEmailService {
+public class ThymeleafEmailService {
     private final TemplateEngine templateEngine;
 
     public String createEmail(String templateName, Map<String, Object> templateModel) {

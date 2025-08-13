@@ -141,7 +141,7 @@ public class PasswordResetImpl implements PasswordResetService {
     private void publishPasswordResetRequestedEvent(User user, String token, String expiration) {
         PasswordResetEvent payload = userEventMapper.toPasswordResetRequestedEvent(user, token, expiration);
         EventMetadata metadata = EventMetadata.builder()
-                .eventType("PasswordResetRequested")
+                .eventType("PasswordReset")
                 .eventSource("PasswordResetImpl")
                 .eventTimestamp(System.currentTimeMillis())
                 .correlationId(UUID.randomUUID().toString())

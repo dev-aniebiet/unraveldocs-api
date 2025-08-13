@@ -18,7 +18,7 @@ public class PasswordResetSuccessfulEventHandler implements EventHandler<Passwor
     public void handleEvent(PasswordResetSuccessfulEvent event) {
         log.info("Processing PasswordResetSuccessfulEvent for email: {}", event.getEmail());
         try {
-            userEmailTemplateService.sendSuccessfulPasswordChange(
+            userEmailTemplateService.sendSuccessfulPasswordReset(
                 event.getEmail(),
                 event.getFirstName(),
                 event.getLastName()

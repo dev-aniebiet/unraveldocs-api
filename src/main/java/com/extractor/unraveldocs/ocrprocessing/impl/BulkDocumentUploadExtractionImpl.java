@@ -121,11 +121,13 @@ public class BulkDocumentUploadExtractionImpl implements BulkDocumentUploadExtra
                 documentCollection.setCollectionStatus(DocumentStatus.FAILED_UPLOAD);
             }
 
-            DocumentCollection savedCollection = documentCollectionRepository.save(documentCollection);
+            // Flush the insert of DocumentCollection and cascaded FileEntry rows before saving OCR data
+            DocumentCollection savedCollection = documentCollectionRepository.saveAndFlush(documentCollection);
             savedCollectionId = savedCollection.getId();
 
             if (!ocrDataToSave.isEmpty()) {
                 ocrDataRepository.saveAll(ocrDataToSave);
+                ocrDataRepository.flush(); // Ensure all OCR data is saved before proceeding
             }
 
             String finalSavedCollectionId = savedCollectionId;

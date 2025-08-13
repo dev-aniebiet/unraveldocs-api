@@ -1,4 +1,4 @@
-package com.extractor.unraveldocs.admin.components;
+package com.extractor.unraveldocs.auth.components;
 
 import com.extractor.unraveldocs.auth.events.UserRegisteredEvent;
 import com.extractor.unraveldocs.documents.utils.SanitizeLogging;

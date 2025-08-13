@@ -17,12 +17,12 @@ public class EventPublisherService {
 
     public <T> void publishEvent(String exchange, String routingKey, BaseEvent<T> event) {
         try {
-            MessageProperties messageProperties = new MessageProperties();
-            messageProperties.setHeader("__TypeId__", event.getMetadata().getEventType());
-            messageProperties.setCorrelationId(event.getMetadata().getCorrelationId());
+            MessageProperties props = new MessageProperties();
+            props.setHeader("__TypeId__", event.getMetadata().getEventType());
+            props.setCorrelationId(event.getMetadata().getCorrelationId());
 
             // Publish only the payload, not the entire BaseEvent
-            Message message = messageConverter.toMessage(event.getPayload(), messageProperties);
+            Message message = messageConverter.toMessage(event.getPayload(), props);
 
             rabbitTemplate.send(exchange, routingKey, message);
 
