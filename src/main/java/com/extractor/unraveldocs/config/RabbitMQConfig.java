@@ -2,6 +2,7 @@ package com.extractor.unraveldocs.config;
 
 import com.extractor.unraveldocs.auth.events.UserRegisteredEvent;
 import com.extractor.unraveldocs.auth.events.WelcomeEvent;
+import com.extractor.unraveldocs.ocrprocessing.events.OcrRequestedEvent;
 import com.extractor.unraveldocs.user.events.*;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.*;
@@ -157,6 +158,7 @@ public class RabbitMQConfig {
         idClassMapping.put("PasswordResetRequested", PasswordResetEvent.class);
         idClassMapping.put("PasswordResetSuccessful", PasswordResetSuccessfulEvent.class);
         idClassMapping.put("WelcomeEvent", WelcomeEvent.class);
+        idClassMapping.put("OcrRequested", OcrRequestedEvent.class);
 
         classMapper.setIdClassMapping(idClassMapping);
         classMapper.setTrustedPackages("*");

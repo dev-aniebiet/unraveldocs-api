@@ -17,10 +17,10 @@ public class AuthEmailTemplateService {
     @Value("${app.base.url}")
     private String baseUrl;
 
-    public void sendVerificationEmail(String email, String firstName, String lastName, String token, String expiration) {
+    public EmailMessage prepareVerificationEmail(String email, String firstName, String lastName, String token, String expiration) {
         String verificationUrl = baseUrl + "/api/v1/auth/verify-email?token=" + token;
 
-        EmailMessage message = EmailMessage.builder()
+        return EmailMessage.builder()
                 .to(email)
                 .subject("Email Verification Token")
                 .templateName("emailVerificationToken")
@@ -31,7 +31,10 @@ public class AuthEmailTemplateService {
                         "expiration", expiration
                 ))
                 .build();
+    }
 
-        emailOrchestratorService.sendEmail(message);
+    public void sendVerificationEmail(String email, String firstName, String lastName, String token, String expiration) {
+        EmailMessage emailMessage = prepareVerificationEmail(email, firstName, lastName, token, expiration);
+        emailOrchestratorService.sendEmail(emailMessage);
     }
 }
