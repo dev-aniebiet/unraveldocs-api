@@ -17,6 +17,7 @@ public class EventPublisherService {
 
     public <T> void publishEvent(String exchange, String routingKey, BaseEvent<T> event) {
         try {
+            /**
             MessageProperties props = new MessageProperties();
             props.setHeader("__TypeId__", event.getMetadata().getEventType());
             props.setCorrelationId(event.getMetadata().getCorrelationId());
@@ -26,6 +27,21 @@ public class EventPublisherService {
 
             rabbitTemplate.send(exchange, routingKey, message);
 
+            log.info("Published event of type '{}' with correlationId '{}' to exchange '{}' with routing key '{}'",
+                    event.getMetadata().getEventType(),
+                    event.getMetadata().getCorrelationId(),
+                    exchange,
+                    routingKey);
+                **/
+
+            Object payload = event.getPayload();
+
+            rabbitTemplate.convertAndSend(exchange, routingKey, payload, message -> {
+                MessageProperties props = message.getMessageProperties();
+                props.setHeader("__TypeId__", event.getMetadata().getEventType());
+                props.setCorrelationId(event.getMetadata().getCorrelationId());
+                return message;
+            });
             log.info("Published event of type '{}' with correlationId '{}' to exchange '{}' with routing key '{}'",
                     event.getMetadata().getEventType(),
                     event.getMetadata().getCorrelationId(),
