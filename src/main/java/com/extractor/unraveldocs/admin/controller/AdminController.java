@@ -1,8 +1,9 @@
 package com.extractor.unraveldocs.admin.controller;
 
+import com.extractor.unraveldocs.admin.dto.response.ActiveOtpListData;
 import com.extractor.unraveldocs.admin.dto.AdminData;
 import com.extractor.unraveldocs.admin.dto.request.ChangeRoleDto;
-import com.extractor.unraveldocs.admin.dto.request.CreateAdminRequestDto;
+import com.extractor.unraveldocs.admin.dto.request.AdminSignupRequestDto;
 import com.extractor.unraveldocs.admin.dto.request.OtpRequestDto;
 import com.extractor.unraveldocs.admin.dto.request.UserFilterDto;
 import com.extractor.unraveldocs.admin.dto.response.UserListData;
@@ -16,7 +17,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,7 +30,7 @@ import java.util.List;
         name = "Admin Management",
         description = "Admin endpoints for user management and other administrative tasks"
 )
-@PreAuthorize("hasRole('SUPER_ADMIN')")
+//@PreAuthorize("hasRole('SUPER_ADMIN')")
 public class AdminController {
     private final AdminService adminService;
 
@@ -43,9 +43,9 @@ public class AdminController {
     @Operation(
             summary = "Create Admin User",
             description = "Allows users to register as an admin to manage the application.")
-    @PostMapping("/create-admin")
+    @PostMapping("/signup")
     public ResponseEntity<UnravelDocsResponse<AdminData>> createAdmin(
-            @Valid @RequestBody CreateAdminRequestDto request
+            @Valid @RequestBody AdminSignupRequestDto request
             ) {
         UnravelDocsResponse<AdminData> response = adminService.createAdmin(request);
         return ResponseEntity.ok(response);
@@ -127,6 +127,23 @@ public class AdminController {
     @PostMapping("/generate-otp")
     public ResponseEntity<UnravelDocsResponse<List<String>>> generateOtp(@Valid @RequestBody OtpRequestDto request) {
         UnravelDocsResponse<List<String>> response = adminService.generateOtp(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Fetch all active OTPs.
+     *
+     * @return ResponseEntity containing the list of active OTPs.
+     */
+    @Operation(
+            summary = "Fetch Active OTPs",
+            description = "Fetches all active One-Time Passwords (OTPs).")
+    @GetMapping("/active-otps")
+    public ResponseEntity<UnravelDocsResponse<ActiveOtpListData>> fetchActiveOtps(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size
+    ) {
+        UnravelDocsResponse<ActiveOtpListData> response = adminService.fetchActiveOtpCodes(page, size);
         return ResponseEntity.ok(response);
     }
 }
