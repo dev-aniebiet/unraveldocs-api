@@ -71,7 +71,7 @@ public class StripeCustomerService {
 
             StripeCustomer savedCustomer = stripeCustomerRepository.save(customer);
             log.info("Created Stripe customer {} for user {}", stripeCustomer.getId(), user.getId());
-            
+
             return savedCustomer;
         } catch (StripeException e) {
             log.error("Failed to create Stripe customer for user {}: {}", user.getId(), e.getMessage());
@@ -120,16 +120,16 @@ public class StripeCustomerService {
 
         try {
             PaymentMethod paymentMethod = PaymentMethod.retrieve(paymentMethodId);
-            
+
             Map<String, Object> params = new HashMap<>();
             params.put("customer", customer.getStripeCustomerId());
-            
+
             paymentMethod.attach(params);
-            
+
             log.info("Attached payment method {} to customer {}", paymentMethodId, customer.getStripeCustomerId());
         } catch (StripeException e) {
-            log.error("Failed to attach payment method {} to customer {}: {}", 
-                     paymentMethodId, customer.getStripeCustomerId(), e.getMessage());
+            log.error("Failed to attach payment method {} to customer {}: {}",
+                    paymentMethodId, customer.getStripeCustomerId(), e.getMessage());
             throw e;
         }
     }
@@ -157,8 +157,8 @@ public class StripeCustomerService {
 
             log.info("Set default payment method {} for customer {}", paymentMethodId, customer.getStripeCustomerId());
         } catch (StripeException e) {
-            log.error("Failed to set default payment method for customer {}: {}", 
-                     customer.getStripeCustomerId(), e.getMessage());
+            log.error("Failed to set default payment method for customer {}: {}",
+                    customer.getStripeCustomerId(), e.getMessage());
             throw e;
         }
     }

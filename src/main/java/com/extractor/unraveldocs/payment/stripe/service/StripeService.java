@@ -45,7 +45,7 @@ public class StripeService {
     /**
      * Create a checkout session for subscription or one-time payment
      */
-    public Session createCheckoutSession(User user, String priceId, String mode, 
+    public Session createCheckoutSession(User user, String priceId, String mode,
                                          String successUrl, String cancelUrl,
                                          Long quantity, Integer trialPeriodDays,
                                          String promoCode, Map<String, String> metadata) throws StripeException {
@@ -96,7 +96,7 @@ public class StripeService {
                     "Created checkout session {} for user {}",
                     sanitizer.sanitizeLogging(session.getId()),
                     sanitizer.sanitizeLogging(user.getId()));
-            
+
             return session;
         } catch (StripeException e) {
             log.error(

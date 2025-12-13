@@ -93,7 +93,7 @@ public class CreateAdminUserImpl implements CreateAdminService {
         newAdmin.setUpdatedAt(now);
 
         String emailVerificationToken = generateVerificationToken.generateVerificationToken();
-        OffsetDateTime tokenExpiry = dateHelper.setExpiryDate(now,"hour", 3);
+        OffsetDateTime tokenExpiry = dateHelper.setExpiryDate(now, "hour", 3);
 
         UserVerification userVerification = new UserVerification();
         userVerification.setUser(newAdmin);

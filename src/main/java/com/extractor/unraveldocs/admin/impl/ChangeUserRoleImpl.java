@@ -17,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 import static com.extractor.unraveldocs.shared.response.ResponseData.getResponseData;
 
 @Service
@@ -32,8 +34,8 @@ public class ChangeUserRoleImpl implements ChangeUserRoleService {
 
         // Admin or Super Admin check
         if (authentication.getAuthorities().stream()
-                .noneMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_admin") ||
-                        grantedAuthority.getAuthority().equals("ROLE_super_admin"))) {
+                .noneMatch(grantedAuthority -> Objects.equals(grantedAuthority.getAuthority(), "ROLE_admin") ||
+                        Objects.equals(grantedAuthority.getAuthority(), "ROLE_super_admin"))) {
             throw new UnauthorizedException("You must be an admin or super admin to change user roles");
         }
 
