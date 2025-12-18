@@ -13,4 +13,18 @@ public class SanitizeLogging {
                    .replaceAll("_+", "_")
                    .replaceAll("^_|_$", "");
     }
+
+    public String sanitizeLogging(Object input) {
+        if (input == null) {
+            return "null";
+        }
+        return sanitizeLogging(input.toString());
+    }
+
+    public String sanitizeLogging(Integer input) {
+        if (input == null) {
+            return "null";
+        }
+        return sanitizeLogging(input.toString());
+    }
 }

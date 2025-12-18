@@ -1,5 +1,6 @@
 package com.extractor.unraveldocs.payment.paystack.service;
 
+import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.payment.enums.PaymentStatus;
 import com.extractor.unraveldocs.payment.enums.PaymentType;
 import com.extractor.unraveldocs.payment.paystack.config.PaystackConfig;
@@ -40,6 +41,7 @@ public class PaystackPaymentService {
     private final PaystackCustomerService customerService;
     private final PaystackPaymentRepository paymentRepository;
     private final ObjectMapper objectMapper;
+    private final SanitizeLogging sanitize;
 
     /**
      * Initialize a transaction for one-time payment or subscription
@@ -131,7 +133,7 @@ public class PaystackPaymentService {
             }
 
             paymentRepository.save(payment);
-            log.info("Initialized transaction {} for user {}", reference, user.getId());
+            log.info("Initialized transaction {} for user {}", sanitize.sanitizeLogging(reference), sanitize.sanitizeLogging(user.getId()));
 
             return data;
         } catch (Exception e) {
@@ -184,12 +186,12 @@ public class PaystackPaymentService {
                 }
 
                 paymentRepository.save(payment);
-                log.info("Updated payment {} with status {}", reference, data.getStatus());
+                log.info("Updated payment {} with status {}", sanitize.sanitizeLogging(reference), sanitize.sanitizeLogging(data.getStatus()));
             });
 
             return data;
         } catch (Exception e) {
-            log.error("Failed to verify transaction {}: {}", reference, e.getMessage());
+            log.error("Failed to verify transaction {}: {}", sanitize.sanitizeLogging(reference), e.getMessage());
             throw new PaystackPaymentException("Failed to verify transaction", e);
         }
     }
@@ -251,11 +253,11 @@ public class PaystackPaymentService {
                     .build();
 
             paymentRepository.save(payment);
-            log.info("Charged authorization {} for user {}, reference: {}", authorizationCode, user.getId(), reference);
+            log.info("Charged authorization {} for user {}, reference: {}", sanitize.sanitizeLogging(authorizationCode), sanitize.sanitizeLogging(user.getId()), sanitize.sanitizeLogging(reference));
 
             return data;
         } catch (Exception e) {
-            log.error("Failed to charge authorization for user {}: {}", user.getId(), e.getMessage());
+            log.error("Failed to charge authorization for user {}: {}", sanitize.sanitizeLogging(user.getId()), e.getMessage());
             throw new PaystackPaymentException("Failed to charge authorization", e);
         }
     }
@@ -299,7 +301,7 @@ public class PaystackPaymentService {
                 payment.setFailureMessage(failureMessage);
             }
             paymentRepository.save(payment);
-            log.info("Updated payment {} status to {}", reference, status);
+            log.info("Updated payment {} status to {}", sanitize.sanitizeLogging(reference), sanitize.sanitizeLogging(String.valueOf(status)));
         });
     }
 
@@ -319,7 +321,7 @@ public class PaystackPaymentService {
             }
 
             paymentRepository.save(payment);
-            log.info("Recorded refund of {} for payment {}", refundAmount, reference);
+            log.info("Recorded refund of {} for payment {}", sanitize.sanitizeLogging(String.valueOf(refundAmount)), sanitize.sanitizeLogging(reference));
         });
     }
 

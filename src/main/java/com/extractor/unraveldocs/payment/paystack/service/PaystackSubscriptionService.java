@@ -1,5 +1,6 @@
 package com.extractor.unraveldocs.payment.paystack.service;
 
+import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.payment.paystack.config.PaystackConfig;
 import com.extractor.unraveldocs.payment.paystack.dto.request.CreateSubscriptionRequest;
 import com.extractor.unraveldocs.payment.paystack.dto.response.PaystackResponse;
@@ -50,6 +51,7 @@ public class PaystackSubscriptionService {
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final ObjectMapper objectMapper;
+    private final SanitizeLogging sanitize;
 
     /**
      * Create a subscription for a user
@@ -114,14 +116,17 @@ public class PaystackSubscriptionService {
             }
 
             PaystackSubscription savedSubscription = subscriptionRepository.save(subscription);
-            log.info("Created Paystack subscription {} for user {}", savedSubscription.getSubscriptionCode(), user.getId());
+            log.info(
+                    "Created Paystack subscription {} for user {}",
+                    sanitize.sanitizeLogging(savedSubscription.getSubscriptionCode()),
+                    sanitize.sanitizeLogging(user.getId()));
 
             // Update user subscription record
             updateUserSubscription(user, savedSubscription, subscriptionPlan);
 
             return savedSubscription;
         } catch (Exception e) {
-            log.error("Failed to create subscription for user {}: {}", user.getId(), e.getMessage());
+            log.error("Failed to create subscription for user {}: {}", sanitize.sanitizeLogging(user.getId()), e.getMessage());
             throw new PaystackPaymentException("Failed to create subscription", e);
         }
     }
@@ -140,7 +145,9 @@ public class PaystackSubscriptionService {
                         .body(String.class);
                 return plan.getPaystackPlanCode();
             } catch (Exception e) {
-                log.warn("Stored Paystack plan code {} not found, recreating plan...", plan.getPaystackPlanCode());
+                log.warn(
+                        "Stored Paystack plan code {} not found, recreating plan...",
+                        sanitize.sanitizeLogging(plan.getPaystackPlanCode()));
             }
         }
         
@@ -148,7 +155,7 @@ public class PaystackSubscriptionService {
         String newPlanCode = createPaystackPlan(plan);
         plan.setPaystackPlanCode(newPlanCode);
         subscriptionPlanRepository.save(plan);
-        log.info("Created and stored Paystack plan code {} for plan {}", newPlanCode, plan.getName().getPlanName());
+        log.info("Created and stored Paystack plan code {} for plan {}", sanitize.sanitizeLogging(newPlanCode), plan.getName().getPlanName());
         return newPlanCode;
     }
 
@@ -213,7 +220,7 @@ public class PaystackSubscriptionService {
 
             return response.getData();
         } catch (Exception e) {
-            log.error("Failed to fetch subscription {}: {}", subscriptionCode, e.getMessage());
+            log.error("Failed to fetch subscription {}: {}", sanitize.sanitizeLogging(subscriptionCode), e.getMessage());
             throw new PaystackPaymentException("Failed to fetch subscription", e);
         }
     }
@@ -255,7 +262,7 @@ public class PaystackSubscriptionService {
             log.info("Enabled subscription: {}", subscriptionCode);
             return savedSubscription;
         } catch (Exception e) {
-            log.error("Failed to enable subscription {}: {}", subscriptionCode, e.getMessage());
+            log.error("Failed to enable subscription {}: {}", sanitize.sanitizeLogging(subscriptionCode), e.getMessage());
             throw new PaystackPaymentException("Failed to enable subscription", e);
         }
     }
@@ -294,10 +301,10 @@ public class PaystackSubscriptionService {
             // Update user subscription
             updateUserSubscriptionStatus(subscription.getUser().getId(), "non-renewing");
 
-            log.info("Disabled subscription: {}", subscriptionCode);
+            log.info("Disabled subscription: {}", sanitize.sanitizeLogging(subscriptionCode));
             return savedSubscription;
         } catch (Exception e) {
-            log.error("Failed to disable subscription {}: {}", subscriptionCode, e.getMessage());
+            log.error("Failed to disable subscription {}: {}", sanitize.sanitizeLogging(subscriptionCode), e.getMessage());
             throw new PaystackPaymentException("Failed to disable subscription", e);
         }
     }
@@ -350,7 +357,7 @@ public class PaystackSubscriptionService {
                     // Update user subscription
                     updateUserSubscriptionStatus(subscription.getUser().getId(), subscriptionData.getStatus());
 
-                    log.info("Updated subscription {} from webhook", subscriptionData.getSubscriptionCode());
+                    log.info("Updated subscription {} from webhook", sanitize.sanitizeLogging(subscriptionData.getSubscriptionCode()));
                 });
     }
 

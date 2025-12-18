@@ -1,5 +1,6 @@
 package com.extractor.unraveldocs.payment.paystack.service;
 
+import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.payment.enums.PaymentStatus;
 import com.extractor.unraveldocs.payment.paystack.config.PaystackConfig;
 import com.extractor.unraveldocs.payment.paystack.dto.response.SubscriptionData;
@@ -44,6 +45,7 @@ public class PaystackWebhookService {
     private final PaystackPaymentRepository paymentRepository;
     private final ReceiptGenerationService receiptGenerationService;
     private final ObjectMapper objectMapper;
+    private final SanitizeLogging sanitize;
 
     /**
      * Verify webhook signature
@@ -78,7 +80,7 @@ public class PaystackWebhookService {
     @Transactional
     public void processWebhookEvent(PaystackWebhookEvent event) {
         String eventType = event.getEvent();
-        log.info("Processing Paystack webhook event: {}", eventType);
+        log.info("Processing Paystack webhook event: {}", sanitize.sanitizeLogging(eventType));
 
         try {
             switch (eventType) {
@@ -94,10 +96,10 @@ public class PaystackWebhookService {
                 case "transfer.success" -> handleTransferSuccess(event.getData());
                 case "transfer.failed" -> handleTransferFailed(event.getData());
                 case "refund.processed" -> handleRefundProcessed(event.getData());
-                default -> log.info("Unhandled webhook event type: {}", eventType);
+                default -> log.info("Unhandled webhook event type: {}", sanitize.sanitizeLogging(eventType));
             }
         } catch (Exception e) {
-            log.error("Error processing webhook event {}: {}", eventType, e.getMessage(), e);
+            log.error("Error processing webhook event {}: {}", sanitize.sanitizeLogging(eventType), e.getMessage(), e);
             throw new PaystackWebhookException("Failed to process webhook event: " + eventType, e);
         }
     }
@@ -110,7 +112,7 @@ public class PaystackWebhookService {
             TransactionData transactionData = objectMapper.convertValue(data, TransactionData.class);
             String reference = transactionData.getReference();
 
-            log.info("Processing charge.success for reference: {}", reference);
+            log.info("Processing charge.success for reference: {}", sanitize.sanitizeLogging(reference));
 
             paymentRepository.findByReference(reference).ifPresent(payment -> {
                 payment.setStatus(PaymentStatus.SUCCEEDED);
@@ -128,7 +130,7 @@ public class PaystackWebhookService {
                 }
 
                 paymentRepository.save(payment);
-                log.info("Updated payment {} to SUCCEEDED", reference);
+                log.info("Updated payment {} to SUCCEEDED", sanitize.sanitizeLogging(reference));
 
                 // Generate receipt
                 generateReceipt(payment, transactionData);
@@ -147,14 +149,14 @@ public class PaystackWebhookService {
             TransactionData transactionData = objectMapper.convertValue(data, TransactionData.class);
             String reference = transactionData.getReference();
 
-            log.info("Processing charge.failed for reference: {}", reference);
+            log.info("Processing charge.failed for reference: {}", sanitize.sanitizeLogging(reference));
 
             paymentRepository.findByReference(reference).ifPresent(payment -> {
                 payment.setStatus(PaymentStatus.FAILED);
                 payment.setGatewayResponse(transactionData.getGatewayResponse());
                 payment.setFailureMessage(transactionData.getGatewayResponse());
                 paymentRepository.save(payment);
-                log.info("Updated payment {} to FAILED", reference);
+                log.info("Updated payment {} to FAILED", sanitize.sanitizeLogging(reference));
             });
         } catch (Exception e) {
             log.error("Failed to handle charge.failed: {}", e.getMessage(), e);
@@ -168,7 +170,7 @@ public class PaystackWebhookService {
     private void handleSubscriptionCreate(Map<String, Object> data) {
         try {
             SubscriptionData subscriptionData = objectMapper.convertValue(data, SubscriptionData.class);
-            log.info("Processing subscription.create for: {}", subscriptionData.getSubscriptionCode());
+            log.info("Processing subscription.create for: {}", sanitize.sanitizeLogging(subscriptionData.getSubscriptionCode()));
 
             subscriptionService.updateSubscriptionFromWebhook(subscriptionData);
         } catch (Exception e) {
@@ -183,7 +185,7 @@ public class PaystackWebhookService {
     private void handleSubscriptionDisable(Map<String, Object> data) {
         try {
             SubscriptionData subscriptionData = objectMapper.convertValue(data, SubscriptionData.class);
-            log.info("Processing subscription.disable for: {}", subscriptionData.getSubscriptionCode());
+            log.info("Processing subscription.disable for: {}", sanitize.sanitizeLogging(subscriptionData.getSubscriptionCode()));
 
             subscriptionService.updateSubscriptionFromWebhook(subscriptionData);
         } catch (Exception e) {
@@ -198,7 +200,7 @@ public class PaystackWebhookService {
     private void handleSubscriptionNotRenew(Map<String, Object> data) {
         try {
             SubscriptionData subscriptionData = objectMapper.convertValue(data, SubscriptionData.class);
-            log.info("Processing subscription.not_renew for: {}", subscriptionData.getSubscriptionCode());
+            log.info("Processing subscription.not_renew for: {}", sanitize.sanitizeLogging(subscriptionData.getSubscriptionCode()));
 
             subscriptionService.updateSubscriptionFromWebhook(subscriptionData);
         } catch (Exception e) {
@@ -212,14 +214,14 @@ public class PaystackWebhookService {
      */
     private void handleSubscriptionExpiringCards(Map<String, Object> data) {
         // Log for now - can be extended to send notifications to users
-        log.info("Received subscription.expiring_cards notification: {}", data);
+        log.info("Received subscription.expiring_cards notification: {}", sanitize.sanitizeLogging(String.valueOf(data)));
     }
 
     /**
      * Handle invoice creation
      */
     private void handleInvoiceCreate(Map<String, Object> data) {
-        log.info("Processing invoice.create: {}", data);
+        log.info("Processing invoice.create: {}", sanitize.sanitizeLogging(String.valueOf(data)));
         // Can be extended to create invoice records
     }
 
@@ -227,7 +229,7 @@ public class PaystackWebhookService {
      * Handle invoice payment failed
      */
     private void handleInvoicePaymentFailed(Map<String, Object> data) {
-        log.info("Processing invoice.payment_failed: {}", data);
+        log.info("Processing invoice.payment_failed: {}", sanitize.sanitizeLogging(String.valueOf(data)));
         // Can be extended to handle failed invoice payments
     }
 
@@ -235,7 +237,7 @@ public class PaystackWebhookService {
      * Handle invoice update
      */
     private void handleInvoiceUpdate(Map<String, Object> data) {
-        log.info("Processing invoice.update: {}", data);
+        log.info("Processing invoice.update: {}", sanitize.sanitizeLogging(String.valueOf(data)));
         // Can be extended to update invoice records
     }
 
@@ -243,7 +245,7 @@ public class PaystackWebhookService {
      * Handle successful transfer
      */
     private void handleTransferSuccess(Map<String, Object> data) {
-        log.info("Processing transfer.success: {}", data);
+        log.info("Processing transfer.success: {}", sanitize.sanitizeLogging(String.valueOf(data)));
         // Can be extended for transfer handling
     }
 
@@ -251,7 +253,7 @@ public class PaystackWebhookService {
      * Handle failed transfer
      */
     private void handleTransferFailed(Map<String, Object> data) {
-        log.info("Processing transfer.failed: {}", data);
+        log.info("Processing transfer.failed: {}", sanitize.sanitizeLogging(String.valueOf(data)));
         // Can be extended for transfer handling
     }
 
@@ -274,7 +276,10 @@ public class PaystackWebhookService {
                 BigDecimal refundAmount = BigDecimal.valueOf(amountInKobo)
                         .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
 
-                log.info("Processing refund.processed for reference: {}, amount: {}", reference, refundAmount);
+                log.info(
+                        "Processing refund.processed for reference: {}, amount: {}",
+                        sanitize.sanitizeLogging(reference),
+                        sanitize.sanitizeLogging(String.valueOf(refundAmount)));
                 paymentService.recordRefund(reference, refundAmount);
             }
         } catch (Exception e) {
@@ -324,7 +329,7 @@ public class PaystackWebhookService {
 
             receiptGenerationService.generateAndSendReceipt(receiptData);
         } catch (Exception e) {
-            log.error("Failed to generate receipt for payment {}: {}", payment.getReference(), e.getMessage());
+            log.error("Failed to generate receipt for payment {}: {}", sanitize.sanitizeLogging(payment.getReference()), e.getMessage());
             // Don't rethrow - receipt generation failure shouldn't fail the webhook
         }
     }

@@ -1,5 +1,6 @@
 package com.extractor.unraveldocs.payment.paystack.service;
 
+import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.payment.paystack.dto.response.CustomerData;
 import com.extractor.unraveldocs.payment.paystack.dto.response.PaystackResponse;
 import com.extractor.unraveldocs.payment.paystack.exception.PaystackCustomerNotFoundException;
@@ -30,6 +31,7 @@ public class PaystackCustomerService {
     private final RestClient paystackRestClient;
     private final PaystackCustomerRepository customerRepository;
     private final ObjectMapper objectMapper;
+    private SanitizeLogging sanitize;
 
     /**
      * Get or create a Paystack customer for a user
@@ -39,7 +41,7 @@ public class PaystackCustomerService {
         Optional<PaystackCustomer> existingCustomer = customerRepository.findByUserId(user.getId());
 
         if (existingCustomer.isPresent()) {
-            log.debug("Found existing Paystack customer for user: {}", user.getId());
+            log.debug("Found existing Paystack customer for user: {}", sanitize.sanitizeLogging(user.getId()));
             return existingCustomer.get();
         }
 
@@ -89,11 +91,11 @@ public class PaystackCustomerService {
                     .build();
 
             PaystackCustomer savedCustomer = customerRepository.save(customer);
-            log.info("Created Paystack customer {} for user {}", savedCustomer.getCustomerCode(), user.getId());
+            log.info("Created Paystack customer {} for user {}", sanitize.sanitizeLogging(savedCustomer.getCustomerCode()), sanitize.sanitizeLogging(user.getId()));
 
             return savedCustomer;
         } catch (Exception e) {
-            log.error("Failed to create Paystack customer for user {}: {}", user.getId(), e.getMessage());
+            log.error("Failed to create Paystack customer for user {}: {}", sanitize.sanitizeLogging(user.getId()), e.getMessage());
             throw new PaystackPaymentException("Failed to create Paystack customer", e);
         }
     }

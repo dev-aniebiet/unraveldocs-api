@@ -1,5 +1,6 @@
 package com.extractor.unraveldocs.payment.paystack.controller;
 
+import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.payment.paystack.dto.webhook.PaystackWebhookEvent;
 import com.extractor.unraveldocs.payment.paystack.exception.PaystackWebhookException;
 import com.extractor.unraveldocs.payment.paystack.service.PaystackWebhookService;
@@ -23,6 +24,7 @@ public class PaystackWebhookController {
 
     private final PaystackWebhookService webhookService;
     private final ObjectMapper objectMapper;
+    private SanitizeLogging sanitize;
 
     /**
      * Handle Paystack webhook events
@@ -39,7 +41,7 @@ public class PaystackWebhookController {
             // Parse payload to event object
             PaystackWebhookEvent event = objectMapper.readValue(payload, PaystackWebhookEvent.class);
 
-            log.info("Received Paystack webhook event: {}", event.getEvent());
+            log.info("Received Paystack webhook event: {}", sanitize.sanitizeLogging(event.getEvent()));
 
             // Verify signature
             if (signature != null && !webhookService.verifyWebhookSignature(payload, signature)) {

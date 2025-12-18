@@ -53,6 +53,11 @@ public class StripeService {
      * @return Idempotency key string
      */
     private String generateIdempotencyKey(String userId, String operation, String uniqueRef) {
+        /*
+        Idempotency keys are not being used in Stripe API calls and require implementation.
+
+The generateIdempotencyKey method is defined but never called. None of the Stripe API operations (Session.create, PaymentIntent.create, Subscription.create, Refund.create) include idempotency keys in their RequestOptions. When creating or updating an object, idempotency keys should be used to safely repeat requests without risk of creating duplicate objects or performing updates twice. Additionally, the current implementation's timestamp-based fallback is insufficient—Stripe recommends using V4 UUIDs or another random string with enough entropy to avoid collisions, not millisecond timestamps. System.currentTimeMillis() can generate at most 1000 values per second, and an ID generator based solely on current time cannot guarantee unique values, especially in multi-threaded scenarios. Apply idempotency keys to all mutating Stripe API calls using RequestOptions, and consider using UUID or a proper idempotency key generation strategy rather than timestamps.
+         */
         String base = userId + "_" + operation + "_" + System.currentTimeMillis();
         if (uniqueRef != null && !uniqueRef.isEmpty()) {
             base = userId + "_" + operation + "_" + uniqueRef;
