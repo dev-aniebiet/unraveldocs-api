@@ -64,13 +64,8 @@ public class WebhookRetryService {
         log.info("Retrying webhook event {} (attempt {})", event.getEventId(), event.getRetryCount() + 1);
 
         try {
-            // Re-construct and process the event
-            Event stripeEvent = Webhook.constructEvent(
-                    event.getPayload(),
-                    null, // Signature already verified on initial receipt
-                    webhookSecret
-            );
-
+            // Deserialize the stored payload directly since signature was verified on initial receipt
+            Event stripeEvent = Event.GSON.fromJson(event.getPayload(), Event.class);
             processEvent(stripeEvent, event);
 
             // Mark as successfully processed
