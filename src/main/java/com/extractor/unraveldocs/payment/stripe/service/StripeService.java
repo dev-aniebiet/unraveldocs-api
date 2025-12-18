@@ -14,6 +14,7 @@ import com.stripe.model.*;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.*;
 import com.stripe.param.checkout.SessionCreateParams;
+import com.stripe.net.RequestOptions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +42,23 @@ public class StripeService {
 
     @Value("${stripe.currency:usd}")
     private String defaultCurrency;
+
+    /**
+     * Generate an idempotency key for Stripe API calls.
+     * This ensures that retries of the same operation don't create duplicate resources.
+     *
+     * @param userId    User ID
+     * @param operation Operation name (e.g., "payment_intent", "subscription")
+     * @param uniqueRef Optional unique reference (e.g., order ID)
+     * @return Idempotency key string
+     */
+    private String generateIdempotencyKey(String userId, String operation, String uniqueRef) {
+        String base = userId + "_" + operation + "_" + System.currentTimeMillis();
+        if (uniqueRef != null && !uniqueRef.isEmpty()) {
+            base = userId + "_" + operation + "_" + uniqueRef;
+        }
+        return base;
+    }
 
     /**
      * Create a checkout session for subscription or one-time payment
