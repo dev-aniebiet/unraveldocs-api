@@ -1539,12 +1539,12 @@ If you want to use CloudFront as the main entry point:
 
 For API endpoints, you typically want:
 
-| Path Pattern | Cache Policy | Use Case |
-|--------------|--------------|----------|
-| `/actuator/*` | CachingDisabled | Health checks |
-| `/api/v1/*` | CachingDisabled | Dynamic API |
+| Path Pattern    | Cache Policy     | Use Case                |
+|-----------------|------------------|-------------------------|
+| `/actuator/*`   | CachingDisabled  | Health checks           |
+| `/api/v1/*`     | CachingDisabled  | Dynamic API             |
 | `/swagger-ui/*` | CachingOptimized | Static docs (cacheable) |
-| `/docs/*` | CachingOptimized | Static docs (cacheable) |
+| `/docs/*`       | CachingOptimized | Static docs (cacheable) |
 
 ### 17.9 Verify CloudFront
 
@@ -1608,15 +1608,15 @@ curl -I https://d1234567890.cloudfront.net/actuator/health
 
 ## Cost Summary
 
-| Service | Free Tier | After Free Tier |
-|---------|-----------|-----------------|
-| EC2 (t2.micro) | 750 hrs/month (12 mo) | ~$8.50/month |
-| RDS (db.t3.micro) | 750 hrs/month (12 mo) | ~$15/month |
-| ECR | 500 MB/month | $0.10/GB |
-| S3 | 5 GB, 20K requests | ~$0.023/GB |
-| CloudFront | 1 TB, 10M requests (12 mo) | ~$0.085/GB |
-| CloudWatch | Basic metrics free | ~$3/month |
-| Data Transfer | 100 GB/month | ~$0.09/GB |
+| Service           | Free Tier                  | After Free Tier |
+|-------------------|----------------------------|-----------------|
+| EC2 (t2.micro)    | 750 hrs/month (12 mo)      | ~$8.50/month    |
+| RDS (db.t3.micro) | 750 hrs/month (12 mo)      | ~$15/month      |
+| ECR               | 500 MB/month               | $0.10/GB        |
+| S3                | 5 GB, 20K requests         | ~$0.023/GB      |
+| CloudFront        | 1 TB, 10M requests (12 mo) | ~$0.085/GB      |
+| CloudWatch        | Basic metrics free         | ~$3/month       |
+| Data Transfer     | 100 GB/month               | ~$0.09/GB       |
 
 **Estimated Monthly Cost (after Free Tier):** ~$30-50/month
 
