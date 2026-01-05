@@ -31,6 +31,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Create Google credentials file
+        run: |
+          echo "${{ secrets.GOOGLE_CREDENTIALS_JSON_BASE64 }}" | base64 -d > src/main/resources/google-credentials.json
+
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:

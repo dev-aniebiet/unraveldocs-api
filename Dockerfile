@@ -32,5 +32,8 @@ COPY --from=build /app/target/*.jar UnravelDocs.jar
 # Expose the port your application runs on
 EXPOSE 8080
 
+# Set production profile by default
+ENV SPRING_PROFILES_ACTIVE=production
+
 # Command to run the application
 ENTRYPOINT ["java", "-jar", "UnravelDocs.jar"]
