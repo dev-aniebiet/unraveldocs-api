@@ -9,6 +9,7 @@ import com.extractor.unraveldocs.documents.interfaces.CollectionUpdateService;
 import com.extractor.unraveldocs.documents.model.DocumentCollection;
 import com.extractor.unraveldocs.documents.model.FileEntry;
 import com.extractor.unraveldocs.documents.repository.DocumentCollectionRepository;
+import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.exceptions.custom.ConflictException;
 import com.extractor.unraveldocs.exceptions.custom.ForbiddenException;
 import com.extractor.unraveldocs.exceptions.custom.NotFoundException;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 public class CollectionUpdateServiceImpl implements CollectionUpdateService {
 
     private final DocumentCollectionRepository documentCollectionRepository;
+    private final SanitizeLogging sanitizer;
 
     @Override
     @Transactional
@@ -65,7 +67,10 @@ public class CollectionUpdateServiceImpl implements CollectionUpdateService {
         DocumentCollection savedCollection = documentCollectionRepository.save(collection);
 
         log.info("Updated collection {} name from '{}' to '{}' for user {}",
-                collectionId, oldName, request.getName(), userId);
+                sanitizer.sanitizeLogging(collectionId),
+                sanitizer.sanitizeLogging(oldName),
+                sanitizer.sanitizeLogging(request.getName()),
+                sanitizer.sanitizeLogging(userId));
 
         // Build response
         List<FileEntryData> fileEntryDataList = savedCollection.getFiles().stream()
@@ -122,7 +127,11 @@ public class CollectionUpdateServiceImpl implements CollectionUpdateService {
         documentCollectionRepository.save(collection);
 
         log.info("Updated document {} display name from '{}' to '{}' in collection {} for user {}",
-                documentId, oldDisplayName, request.getDisplayName(), collectionId, userId);
+                sanitizer.sanitizeLogging(documentId),
+                sanitizer.sanitizeLogging(oldDisplayName),
+                sanitizer.sanitizeLogging(request.getDisplayName()),
+                sanitizer.sanitizeLogging(collectionId),
+                sanitizer.sanitizeLogging(userId));
 
         // Build response
         FileEntryData fileEntryData = mapToFileEntryData(fileEntry);
