@@ -1,5 +1,6 @@
 package com.extractor.unraveldocs.payment.paypal.service;
 
+import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.payment.paypal.config.PayPalConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,8 @@ import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /**
@@ -35,6 +38,9 @@ class PayPalWebhookSignatureServiceTest {
     @Mock
     private RestClient paypalRestClient;
 
+    @Mock
+    private SanitizeLogging sanitizer;
+
     private ObjectMapper objectMapper;
     private PayPalWebhookSignatureService signatureService;
 
@@ -50,8 +56,10 @@ class PayPalWebhookSignatureServiceTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
+        // Configure sanitizer mock to return sanitized values (lenient as it may not be called in all tests)
+        lenient().when(sanitizer.sanitizeLogging(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
         signatureService = new PayPalWebhookSignatureService(
-                payPalConfig, authService, paypalRestClient, objectMapper);
+                payPalConfig, authService, paypalRestClient, objectMapper, sanitizer);
     }
 
     @Nested

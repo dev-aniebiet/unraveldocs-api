@@ -144,7 +144,6 @@ public class TeamInvitationServiceImpl {
                 sanitizer.sanitizeLogging(request.email()),
                 sanitizer.sanitizeLogging(teamId));
 
-        //String inviteLink = baseUrl + "/teams/invite/" + token;
         String inviteLink = baseUrl + "/teams/join/" + token;
         return responseBuilder.buildUserResponse(inviteLink, HttpStatus.CREATED,
                 "Invitation sent to " + request.email());
@@ -239,7 +238,7 @@ public class TeamInvitationServiceImpl {
 
     private void sendInvitationEmail(String toEmail, Team team, User inviter, String token) {
         try {
-            String inviteLink = baseUrl + "/teams/invite/" + token;
+            String inviteLink = baseUrl + "/teams/join/" + token;
 
             Map<String, Object> templateModel = new HashMap<>();
             templateModel.put("teamName", team.getName());

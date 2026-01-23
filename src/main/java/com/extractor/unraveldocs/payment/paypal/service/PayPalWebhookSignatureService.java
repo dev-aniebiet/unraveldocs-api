@@ -1,5 +1,6 @@
 package com.extractor.unraveldocs.payment.paypal.service;
 
+import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.payment.paypal.config.PayPalConfig;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +24,7 @@ public class PayPalWebhookSignatureService {
     private final PayPalAuthService authService;
     private final RestClient paypalRestClient;
     private final ObjectMapper objectMapper;
+    private final SanitizeLogging sanitizer;
 
     private static final String VERIFICATION_STATUS_SUCCESS = "SUCCESS";
 
@@ -67,7 +69,7 @@ public class PayPalWebhookSignatureService {
                     transmissionId, transmissionTime, transmissionSig,
                     certUrl, authAlgo, webhookId, webhookEvent);
 
-            log.debug("Verifying PayPal webhook signature for transmission ID: {}", transmissionId);
+            log.debug("Verifying PayPal webhook signature for transmission ID: {}", sanitizer.sanitizeLogging(transmissionId));
 
             // Call PayPal's verify-webhook-signature endpoint
             String response = paypalRestClient.post()
@@ -86,16 +88,16 @@ public class PayPalWebhookSignatureService {
 
             if (isValid) {
                 log.info("PayPal webhook signature verification successful for transmission ID: {}",
-                        transmissionId);
+                        sanitizer.sanitizeLogging(transmissionId));
             } else {
                 log.warn("PayPal webhook signature verification failed. Status: {}, Transmission ID: {}",
-                        verificationStatus, transmissionId);
+                        sanitizer.sanitizeLogging(verificationStatus), sanitizer.sanitizeLogging(transmissionId));
             }
 
             return isValid;
 
         } catch (Exception e) {
-            log.error("Error verifying PayPal webhook signature: {}", e.getMessage(), e);
+            log.error("Error verifying PayPal webhook signature: {}", sanitizer.sanitizeLogging(e.getMessage()), e);
             return false;
         }
     }

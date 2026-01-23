@@ -1,6 +1,5 @@
 package com.extractor.unraveldocs.payment.paypal.controller;
 
-import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.payment.paypal.dto.request.CreateOrderRequest;
 import com.extractor.unraveldocs.payment.paypal.dto.request.CreateSubscriptionRequest;
 import com.extractor.unraveldocs.payment.paypal.dto.request.RefundOrderRequest;
@@ -43,7 +42,6 @@ public class PayPalPaymentController {
         private final PayPalPaymentService paymentService;
         private final PayPalSubscriptionService subscriptionService;
         private final PayPalPlanSetupService planSetupService;
-        private final SanitizeLogging sanitizer;
 
         // ==================== PLAN ENDPOINTS (PUBLIC) ====================
 
@@ -264,7 +262,7 @@ public class PayPalPaymentController {
                         @RequestParam(required = false) String token,
                         @RequestParam(required = false) String PayerID) {
 
-                log.info("PayPal return callback - token: {}, PayerID: {}", token, PayerID);
+                log.info("PayPal returns callback with token and PayerID");
 
                 return ResponseEntity.ok(Map.of(
                                 "status", true,
@@ -278,7 +276,7 @@ public class PayPalPaymentController {
         @Operation(summary = "Payment cancel callback", description = "Handle cancellation from PayPal")
         public ResponseEntity<Map<String, Object>> handleCancel(@RequestParam(required = false) String token) {
 
-                log.info("PayPal cancel callback - token: {}", sanitizer.sanitizeLogging(token));
+                log.info("PayPal calls cancel callback with token");
 
                 return ResponseEntity.ok(Map.of(
                                 "status", false,

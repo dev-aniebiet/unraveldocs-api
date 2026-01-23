@@ -7,6 +7,7 @@ import com.extractor.unraveldocs.documents.interfaces.DocumentMoveService;
 import com.extractor.unraveldocs.documents.model.DocumentCollection;
 import com.extractor.unraveldocs.documents.model.FileEntry;
 import com.extractor.unraveldocs.documents.repository.DocumentCollectionRepository;
+import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.exceptions.custom.ForbiddenException;
 import com.extractor.unraveldocs.exceptions.custom.NotFoundException;
 import com.extractor.unraveldocs.subscription.service.SubscriptionFeatureService;
@@ -32,6 +33,7 @@ public class DocumentMoveServiceImpl implements DocumentMoveService {
 
     private final DocumentCollectionRepository documentCollectionRepository;
     private final SubscriptionFeatureService subscriptionFeatureService;
+    private final SanitizeLogging sanitizer;
 
     @Override
     @Transactional
@@ -91,10 +93,10 @@ public class DocumentMoveServiceImpl implements DocumentMoveService {
         documentCollectionRepository.save(targetCollection);
 
         log.info("Moved document {} from collection {} to collection {} for user {}",
-                request.getDocumentId(),
-                request.getSourceCollectionId(),
-                request.getTargetCollectionId(),
-                userId);
+                sanitizer.sanitizeLogging(request.getDocumentId()),
+                sanitizer.sanitizeLogging(request.getSourceCollectionId()),
+                sanitizer.sanitizeLogging(request.getTargetCollectionId()),
+                sanitizer.sanitizeLogging(userId));
 
         // Build response
         FileEntryData fileEntryData = FileEntryData.builder()
