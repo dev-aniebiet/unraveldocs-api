@@ -65,6 +65,10 @@ public class NotificationPreferences {
     @Builder.Default
     private boolean teamNotifications = true;
 
+    @Column(name = "coupon_notifications", nullable = false)
+    @Builder.Default
+    private boolean couponNotifications = true;
+
     @Column(name = "quiet_hours_enabled", nullable = false)
     @Builder.Default
     private boolean quietHoursEnabled = false;
@@ -98,6 +102,7 @@ public class NotificationPreferences {
             case "storage" -> storageNotifications;
             case "subscription" -> subscriptionNotifications;
             case "team" -> teamNotifications;
+            case "coupon" -> couponNotifications;
             case "system" -> true; // System notifications are always enabled
             default -> true;
         };
@@ -135,6 +140,7 @@ public class NotificationPreferences {
                 .storageNotifications(true)
                 .subscriptionNotifications(true)
                 .teamNotifications(true)
+                .couponNotifications(true)
                 .quietHoursEnabled(false)
                 .build();
     }

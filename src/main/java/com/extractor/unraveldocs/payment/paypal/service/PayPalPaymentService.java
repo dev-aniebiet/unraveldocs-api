@@ -1,5 +1,9 @@
 package com.extractor.unraveldocs.payment.paypal.service;
 
+import com.extractor.unraveldocs.coupon.dto.request.ApplyCouponRequest;
+import com.extractor.unraveldocs.coupon.dto.response.DiscountCalculationData;
+import com.extractor.unraveldocs.coupon.exception.InvalidCouponException;
+import com.extractor.unraveldocs.coupon.service.CouponValidationService;
 import com.extractor.unraveldocs.payment.enums.PaymentStatus;
 import com.extractor.unraveldocs.payment.enums.PaymentType;
 import com.extractor.unraveldocs.payment.paypal.config.PayPalConfig;
@@ -27,6 +31,7 @@ import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +48,7 @@ public class PayPalPaymentService {
     private final PayPalAuthService authService;
     private final PayPalCustomerService customerService;
     private final PayPalPaymentRepository paymentRepository;
+    private final CouponValidationService couponValidationService;
     private final RestClient paypalRestClient;
     private final ObjectMapper objectMapper;
 
@@ -58,24 +64,54 @@ public class PayPalPaymentService {
             // Ensure customer exists
             PayPalCustomer customer = customerService.getOrCreateCustomer(user);
 
+            // Track coupon discount info
+            BigDecimal originalAmount = request.getAmount();
+            BigDecimal finalAmount = request.getAmount();
+            BigDecimal discountAmount = BigDecimal.ZERO;
+            String appliedCouponCode = null;
+
+            // Validate and apply coupon if provided
+            if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
+                ApplyCouponRequest couponRequest = new ApplyCouponRequest();
+                couponRequest.setCouponCode(request.getCouponCode());
+                couponRequest.setAmount(originalAmount);
+
+                DiscountCalculationData discountData = couponValidationService.applyCouponToAmount(couponRequest, user);
+
+                // Check minimum purchase requirement
+                if (discountData.getMinPurchaseAmount() != null
+                        && !discountData.isMinPurchaseRequirementMet()) {
+                    throw new InvalidCouponException(
+                            String.format("Minimum purchase amount of %s required for this coupon",
+                                    discountData.getMinPurchaseAmount()));
+                }
+
+                finalAmount = discountData.getFinalAmount();
+                discountAmount = discountData.getDiscountAmount();
+                appliedCouponCode = discountData.getCouponCode();
+
+                log.info("Coupon {} applied: original={}, discount={}, final={}",
+                        appliedCouponCode, originalAmount, discountAmount, finalAmount);
+            }
+
             // Build order request
             String currency = request.getCurrency() != null ? request.getCurrency() : payPalConfig.getDefaultCurrency();
             String returnUrl = request.getReturnUrl() != null ? request.getReturnUrl() : payPalConfig.getReturnUrl();
             String cancelUrl = request.getCancelUrl() != null ? request.getCancelUrl() : payPalConfig.getCancelUrl();
 
-            Map<String, Object> orderRequest = Map.of(
-                    "intent", request.getIntent(),
-                    "purchase_units", List.of(Map.of(
-                            "amount", Map.of(
-                                    "currency_code", currency,
-                                    "value", request.getAmount().toString()),
-                            "description", request.getDescription() != null ? request.getDescription() : "Payment")),
-                    "application_context", Map.of(
-                            "return_url", returnUrl,
-                            "cancel_url", cancelUrl,
-                            "brand_name", "UnravelDocs",
-                            "landing_page", "LOGIN",
-                            "user_action", "PAY_NOW"));
+            Map<String, Object> orderRequest = new HashMap<>();
+            orderRequest.put("intent", request.getIntent());
+            orderRequest.put("purchase_units", List.of(Map.of(
+                    "amount", Map.of(
+                            "currency_code", currency,
+                            "value", finalAmount.toString()),
+                    "description", request.getDescription() != null ? request.getDescription() : "Payment")));
+            orderRequest.put("application_context", Map.of(
+                    "return_url", returnUrl,
+                    "cancel_url", cancelUrl,
+                    "brand_name", "UnravelDocs",
+                    "landing_page", "LOGIN",
+                    "user_action", "PAY_NOW"));
 
             String response = paypalRestClient.post()
                     .uri("/v2/checkout/orders")
@@ -87,12 +123,16 @@ public class PayPalPaymentService {
             JsonNode orderJson = objectMapper.readTree(response);
             PayPalOrderResponse orderResponse = parseOrderResponse(orderJson);
 
-            // Record the payment
-            recordPayment(user, customer, orderResponse, request);
+            // Record the payment with coupon info
+            recordPayment(user, customer, orderResponse, request,
+                    originalAmount, finalAmount, discountAmount, appliedCouponCode);
 
             log.info("Created PayPal order: {}", orderResponse.getId());
             return orderResponse;
 
+        } catch (InvalidCouponException e) {
+            log.warn("Coupon validation failed for user {}: {}", user.getId(), e.getMessage());
+            throw e;
         } catch (PayPalPaymentException e) {
             throw e;
         } catch (Exception e) {
@@ -244,14 +284,18 @@ public class PayPalPaymentService {
     // ==================== Private Helper Methods ====================
 
     private void recordPayment(User user, PayPalCustomer customer,
-            PayPalOrderResponse orderResponse, CreateOrderRequest request) {
+            PayPalOrderResponse orderResponse, CreateOrderRequest request,
+            BigDecimal originalAmount, BigDecimal finalAmount, BigDecimal discountAmount, String couponCode) {
         PayPalPayment payment = PayPalPayment.builder()
                 .user(user)
                 .paypalCustomer(customer)
                 .orderId(orderResponse.getId())
                 .paymentType(PaymentType.ONE_TIME)
                 .status(PaymentStatus.PENDING)
-                .amount(request.getAmount())
+                .amount(finalAmount) // Store the discounted amount
+                .originalAmount(originalAmount)
+                .discountAmount(discountAmount)
+                .couponCode(couponCode)
                 .currency(request.getCurrency() != null ? request.getCurrency() : payPalConfig.getDefaultCurrency())
                 .intent(request.getIntent())
                 .description(request.getDescription())

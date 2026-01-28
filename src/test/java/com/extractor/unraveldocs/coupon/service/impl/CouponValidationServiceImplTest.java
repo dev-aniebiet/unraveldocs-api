@@ -66,7 +66,8 @@ class CouponValidationServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        // Configure sanitizer mock to return input value (lenient as it may not be called in all tests)
+        // Configure sanitizer mock to return input value (lenient as it may not be
+        // called in all tests)
         lenient().when(sanitizer.sanitizeLogging(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
 
         testUser = createTestUser();
@@ -246,7 +247,7 @@ class CouponValidationServiceImplTest {
         }
 
         @Test
-        @DisplayName("Should return null when validation fails")
+        @DisplayName("Should throw exception when coupon is invalid")
         void applyCoupon_failure_invalidCoupon() {
             // Arrange
             ApplyCouponRequest request = ApplyCouponRequest.builder()
@@ -256,11 +257,10 @@ class CouponValidationServiceImplTest {
 
             when(couponRepository.findByCode("INVALID")).thenReturn(Optional.empty());
 
-            // Act
-            DiscountCalculationData result = validationService.applyCouponToAmount(request, testUser);
-
-            // Assert
-            assertNull(result);
+            // Act & Assert - expect InvalidCouponException to be thrown
+            assertThrows(
+                    com.extractor.unraveldocs.coupon.exception.InvalidCouponException.class,
+                    () -> validationService.applyCouponToAmount(request, testUser));
         }
     }
 }

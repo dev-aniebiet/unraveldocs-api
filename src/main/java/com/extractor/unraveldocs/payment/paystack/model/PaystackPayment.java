@@ -25,7 +25,8 @@ import java.time.OffsetDateTime;
         @Index(name = "idx_paystack_transaction_id", columnList = "transaction_id"),
         @Index(name = "idx_paystack_payment_user_id", columnList = "user_id"),
         @Index(name = "idx_paystack_payment_status", columnList = "status"),
-        @Index(name = "idx_paystack_payment_created_at", columnList = "created_at")
+        @Index(name = "idx_paystack_payment_created_at", columnList = "created_at"),
+        @Index(name = "idx_paystack_coupon_code", columnList = "coupon_code")
 })
 @NoArgsConstructor
 @AllArgsConstructor
@@ -78,6 +79,26 @@ public class PaystackPayment {
     @Column(nullable = false, length = 3)
     private String currency;
 
+    /**
+     * Coupon code applied to this payment, if any.
+     */
+    @Column(name = "coupon_code", length = 50)
+    private String couponCode;
+
+    /**
+     * Original amount before coupon discount was applied.
+     * Only populated if a coupon was used.
+     */
+    @Column(name = "original_amount", precision = 10, scale = 2)
+    private BigDecimal originalAmount;
+
+    /**
+     * Discount amount from coupon.
+     * Only populated if a coupon was used.
+     */
+    @Column(name = "discount_amount", precision = 10, scale = 2)
+    private BigDecimal discountAmount;
+
     @Column(name = "amount_refunded", precision = 10, scale = 2)
     private BigDecimal amountRefunded;
 
@@ -112,4 +133,3 @@ public class PaystackPayment {
     @Column(nullable = false, name = "updated_at")
     private OffsetDateTime updatedAt;
 }
-

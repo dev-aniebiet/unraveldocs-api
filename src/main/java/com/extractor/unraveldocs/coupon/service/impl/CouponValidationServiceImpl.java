@@ -5,6 +5,8 @@ import com.extractor.unraveldocs.coupon.dto.request.ApplyCouponRequest;
 import com.extractor.unraveldocs.coupon.dto.response.CouponValidationResponse;
 import com.extractor.unraveldocs.coupon.dto.response.DiscountCalculationData;
 import com.extractor.unraveldocs.coupon.enums.RecipientCategory;
+import com.extractor.unraveldocs.coupon.exception.CouponConcurrentUsageException;
+import com.extractor.unraveldocs.coupon.exception.InvalidCouponException;
 import com.extractor.unraveldocs.coupon.helpers.CouponMapper;
 import com.extractor.unraveldocs.coupon.model.Coupon;
 import com.extractor.unraveldocs.coupon.model.CouponUsage;
@@ -70,7 +72,9 @@ public class CouponValidationServiceImpl implements CouponValidationService {
         }
 
         // Check per-user usage limit
-        if (hasExceededPerUserLimit(coupon.getId(), user.getId(), coupon.getMaxUsagePerUser())) {
+        Integer maxUsagePerUser = coupon.getMaxUsagePerUser();
+        if (maxUsagePerUser != null && maxUsagePerUser > 0 &&
+                hasExceededPerUserLimit(coupon.getId(), user.getId(), maxUsagePerUser)) {
             return CouponValidationResponse.invalid(
                     "You have already used this coupon the maximum number of times",
                     "PER_USER_LIMIT_REACHED");
@@ -96,7 +100,8 @@ public class CouponValidationServiceImpl implements CouponValidationService {
         // Validate coupon first
         CouponValidationResponse validation = validateCoupon(request.getCouponCode(), user);
         if (!validation.isValid()) {
-            return null;
+            // Throw exception with the specific validation message
+            throw new InvalidCouponException(validation.getMessage());
         }
 
         Coupon coupon = couponRepository.findByCode(request.getCouponCode().toUpperCase()).orElseThrow();
@@ -165,12 +170,18 @@ public class CouponValidationServiceImpl implements CouponValidationService {
 
         couponUsageRepository.save(usage);
 
-        // Increment coupon usage count
-        coupon.incrementUsageCount();
-        couponRepository.save(coupon);
-
-        log.info("Coupon usage recorded. New usage count: {}",
-                sanitizer.sanitizeLoggingInteger(coupon.getCurrentUsageCount()));
+        // Increment coupon usage count with optimistic locking protection
+        try {
+            coupon.incrementUsageCount();
+            couponRepository.save(coupon);
+            log.info("Coupon usage recorded. New usage count: {}",
+                    sanitizer.sanitizeLoggingInteger(coupon.getCurrentUsageCount()));
+        } catch (org.springframework.dao.OptimisticLockingFailureException e) {
+            log.warn("Concurrent coupon usage detected for coupon: {}. Retrying is recommended.",
+                    sanitizer.sanitizeLogging(coupon.getCode()));
+            throw new CouponConcurrentUsageException(
+                    "Coupon was modified concurrently. Please try again.", e);
+        }
     }
 
     @Override

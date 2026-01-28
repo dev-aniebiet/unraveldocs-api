@@ -1,8 +1,11 @@
 package com.extractor.unraveldocs.coupon.exception;
 
+import lombok.Getter;
+
 /**
  * Exception thrown when a coupon is invalid or cannot be used.
  */
+@Getter
 public class InvalidCouponException extends RuntimeException {
 
     private final String errorCode;
@@ -17,7 +20,4 @@ public class InvalidCouponException extends RuntimeException {
         this.errorCode = "INVALID_COUPON";
     }
 
-    public String getErrorCode() {
-        return errorCode;
-    }
 }

@@ -91,6 +91,15 @@ public class Coupon {
     private OffsetDateTime updatedAt;
 
     /**
+     * Version field for optimistic locking.
+     * Prevents race conditions when multiple requests try to increment usage count
+     * simultaneously.
+     */
+    @Version
+    @Column(name = "version")
+    private Long version;
+
+    /**
      * Checks if the coupon is currently valid based on date range.
      */
     public boolean isCurrentlyValid() {

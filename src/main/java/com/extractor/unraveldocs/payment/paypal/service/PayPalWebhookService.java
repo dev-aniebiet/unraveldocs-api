@@ -1,8 +1,12 @@
 package com.extractor.unraveldocs.payment.paypal.service;
 
+import com.extractor.unraveldocs.coupon.model.Coupon;
+import com.extractor.unraveldocs.coupon.repository.CouponRepository;
+import com.extractor.unraveldocs.coupon.service.CouponValidationService;
 import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.payment.enums.PaymentStatus;
 import com.extractor.unraveldocs.payment.paypal.exception.PayPalWebhookException;
+import com.extractor.unraveldocs.payment.paypal.model.PayPalPayment;
 import com.extractor.unraveldocs.payment.paypal.model.PayPalWebhookEvent;
 import com.extractor.unraveldocs.payment.paypal.repository.PayPalWebhookEventRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -25,6 +29,8 @@ public class PayPalWebhookService {
     private final PayPalPaymentService paymentService;
     private final PayPalSubscriptionService subscriptionService;
     private final PayPalWebhookEventRepository webhookEventRepository;
+    private final CouponValidationService couponValidationService;
+    private final CouponRepository couponRepository;
     private final ObjectMapper objectMapper;
     private final SanitizeLogging sanitizer;
 
@@ -132,6 +138,9 @@ public class PayPalWebhookService {
             // Find the payment by capture ID and update status
             paymentService.getPaymentByCaptureId(captureId).ifPresent(payment -> {
                 paymentService.updatePaymentStatus(payment.getOrderId(), PaymentStatus.SUCCEEDED, null);
+
+                // Record coupon usage if applicable
+                recordCouponUsageIfApplicable(payment);
             });
 
         } catch (Exception e) {
@@ -292,5 +301,42 @@ public class PayPalWebhookService {
             }
             webhookEventRepository.save(event);
         });
+    }
+
+    /**
+     * Records coupon usage if the payment used a coupon.
+     */
+    private void recordCouponUsageIfApplicable(PayPalPayment payment) {
+        if (payment.getCouponCode() == null || payment.getCouponCode().isBlank()) {
+            return;
+        }
+
+        try {
+            Coupon coupon = couponRepository.findByCode(payment.getCouponCode().toUpperCase()).orElse(null);
+            if (coupon == null) {
+                log.warn("Coupon not found for code: {} during usage recording",
+                        sanitizer.sanitizeLogging(payment.getCouponCode()));
+                return;
+            }
+
+            couponValidationService.recordCouponUsage(
+                    coupon,
+                    payment.getUser(),
+                    payment.getOriginalAmount(),
+                    payment.getAmount(),
+                    payment.getOrderId(),
+                    null // subscriptionPlan can be null for one-time payments
+            );
+
+            log.info("Recorded coupon usage for code: {} on PayPal payment: {}",
+                    sanitizer.sanitizeLogging(payment.getCouponCode()),
+                    sanitizer.sanitizeLogging(payment.getOrderId()));
+
+        } catch (Exception e) {
+            log.error("Failed to record coupon usage for payment {}: {}",
+                    sanitizer.sanitizeLogging(payment.getOrderId()),
+                    sanitizer.sanitizeLogging(e.getMessage()), e);
+            // Don't throw - coupon usage recording should not fail the webhook
+        }
     }
 }

@@ -39,7 +39,6 @@ public class CouponController {
     public ResponseEntity<UnravelDocsResponse<CouponValidationResponse>> validateCoupon(
             @PathVariable String code,
             @AuthenticationPrincipal User user) {
-        log.info("User {} validating coupon: {}", user.getEmail(), code);
 
         CouponValidationResponse validation = couponValidationService.validateCoupon(code, user);
 
@@ -57,8 +56,6 @@ public class CouponController {
     public ResponseEntity<UnravelDocsResponse<DiscountCalculationData>> applyCoupon(
             @Valid @RequestBody ApplyCouponRequest request,
             @AuthenticationPrincipal User user) {
-        log.info("User {} applying coupon: {} to amount: {}",
-                user.getEmail(), request.getCouponCode(), request.getAmount());
 
         DiscountCalculationData discountData = couponValidationService.applyCouponToAmount(request, user);
 
@@ -96,7 +93,6 @@ public class CouponController {
     @GetMapping("/available")
     public ResponseEntity<UnravelDocsResponse<List<CouponData>>> getAvailableCoupons(
             @AuthenticationPrincipal User user) {
-        log.info("User {} fetching available coupons", user.getEmail());
         UnravelDocsResponse<List<CouponData>> response = couponService.getCouponsForUser(user.getId());
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }

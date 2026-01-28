@@ -44,6 +44,11 @@ public class CreateOrderRequest {
     private String planId;
 
     /**
+     * Optional coupon code for discount.
+     */
+    private String couponCode;
+
+    /**
      * Intent: CAPTURE for immediate payment, AUTHORIZE for auth-only.
      */
     @Builder.Default

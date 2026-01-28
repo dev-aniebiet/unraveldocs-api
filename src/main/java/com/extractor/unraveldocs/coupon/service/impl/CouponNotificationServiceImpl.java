@@ -10,7 +10,6 @@ import com.extractor.unraveldocs.messaging.dto.EmailMessage;
 import com.extractor.unraveldocs.messaging.emailservice.EmailOrchestratorService;
 import com.extractor.unraveldocs.pushnotification.datamodel.NotificationType;
 import com.extractor.unraveldocs.pushnotification.interfaces.NotificationService;
-import com.extractor.unraveldocs.subscription.datamodel.SubscriptionPlans;
 import com.extractor.unraveldocs.subscription.model.UserSubscription;
 import com.extractor.unraveldocs.subscription.repository.UserSubscriptionRepository;
 import com.extractor.unraveldocs.user.model.User;
@@ -45,7 +44,7 @@ public class CouponNotificationServiceImpl implements CouponNotificationService 
     @Override
     @Async
     public void notifyRecipients(Coupon coupon) {
-        log.info("Notifying recipients for coupon: {}", coupon.getCode());
+        log.info("Notifying recipients for coupon: {}", sanitizer.sanitizeLogging(coupon.getCode()));
 
         List<User> recipients = determineRecipients(coupon);
         log.info("Found {} eligible recipients for coupon: {}",
@@ -98,7 +97,8 @@ public class CouponNotificationServiceImpl implements CouponNotificationService 
             emailOrchestratorService.sendEmail(emailMessage);
             log.debug("Coupon email sent to: {}", sanitizer.sanitizeLogging(user.getEmail()));
         } catch (Exception e) {
-            log.error("Failed to send coupon email to {}: {}", sanitizer.sanitizeLogging(user.getEmail()), e.getMessage());
+            log.error("Failed to send coupon email to {}: {}", sanitizer.sanitizeLogging(user.getEmail()),
+                    e.getMessage());
         }
     }
 
@@ -127,7 +127,8 @@ public class CouponNotificationServiceImpl implements CouponNotificationService 
 
             log.debug("Coupon push notification sent to: {}", sanitizer.sanitizeLogging(user.getEmail()));
         } catch (Exception e) {
-            log.error("Failed to send coupon push notification to {}: {}", sanitizer.sanitizeLogging(user.getEmail()), e.getMessage());
+            log.error("Failed to send coupon push notification to {}: {}",
+                    sanitizer.sanitizeLogging(user.getEmail()), e.getMessage());
         }
     }
 
@@ -316,61 +317,38 @@ public class CouponNotificationServiceImpl implements CouponNotificationService 
     }
 
     private List<User> findAllPaidUsers() {
-        return userSubscriptionRepository.findAll().stream()
-                .filter(sub -> isSubscriptionActive(sub) &&
-                        sub.getPlan().getName() != SubscriptionPlans.FREE)
+        return userSubscriptionRepository.findActivePaidSubscriptions().stream()
                 .map(UserSubscription::getUser)
                 .toList();
     }
 
     private List<User> findUsersByPlan(String planName) {
-        return userSubscriptionRepository.findAll().stream()
-                .filter(sub -> isSubscriptionActive(sub) &&
-                        planName.equalsIgnoreCase(sub.getPlan().getName().name()))
+        return userSubscriptionRepository.findActiveSubscriptionsByPlanName(planName).stream()
                 .map(UserSubscription::getUser)
                 .toList();
     }
 
     private List<User> findFreeTierActiveUsers() {
-        return userSubscriptionRepository.findAll().stream()
-                .filter(sub -> sub.getPlan().getName() == SubscriptionPlans.FREE &&
-                        sub.getOcrPagesUsed() != null && sub.getOcrPagesUsed() >= 20)
+        return userSubscriptionRepository.findFreeTierWithHighActivity().stream()
                 .map(UserSubscription::getUser)
                 .toList();
     }
 
     private List<User> findExpiredSubscriptionUsers() {
         OffsetDateTime threeMonthsAgo = OffsetDateTime.now().minusMonths(3);
-        return userSubscriptionRepository.findAll().stream()
-                .filter(sub -> !isSubscriptionActive(sub) &&
-                        sub.getCurrentPeriodEnd() != null &&
-                        sub.getCurrentPeriodEnd().isAfter(threeMonthsAgo))
+        return userSubscriptionRepository.findRecentlyExpiredSubscriptions(threeMonthsAgo).stream()
                 .map(UserSubscription::getUser)
                 .toList();
     }
 
     private List<User> findNewUsers() {
         OffsetDateTime thirtyDaysAgo = OffsetDateTime.now().minusDays(30);
-        return userRepository.findAll().stream()
-                .filter(user -> user.getCreatedAt() != null && user.getCreatedAt().isAfter(thirtyDaysAgo))
-                .toList();
+        return userRepository.findByCreatedAtAfterAndDeletedAtIsNull(thirtyDaysAgo);
     }
 
     private List<User> findHighActivityUsers() {
-        return userSubscriptionRepository.findAll().stream()
-                .filter(sub -> {
-                    Integer used = sub.getOcrPagesUsed();
-                    Integer limit = sub.getPlan().getOcrPageLimit();
-                    return used != null && limit != null && limit > 0 && (double) used / limit > 0.5;
-                })
+        return userSubscriptionRepository.findHighActivitySubscriptions().stream()
                 .map(UserSubscription::getUser)
                 .toList();
-    }
-
-    /**
-     * Helper method to check if subscription is active based on status.
-     */
-    private boolean isSubscriptionActive(com.extractor.unraveldocs.subscription.model.UserSubscription subscription) {
-        return "ACTIVE".equalsIgnoreCase(subscription.getStatus());
     }
 }

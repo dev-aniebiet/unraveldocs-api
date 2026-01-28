@@ -1,5 +1,8 @@
 package com.extractor.unraveldocs.payment.paystack.service;
 
+import com.extractor.unraveldocs.coupon.model.Coupon;
+import com.extractor.unraveldocs.coupon.repository.CouponRepository;
+import com.extractor.unraveldocs.coupon.service.CouponValidationService;
 import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.payment.enums.PaymentStatus;
 import com.extractor.unraveldocs.payment.paystack.config.PaystackConfig;
@@ -46,6 +49,8 @@ public class PaystackWebhookService {
     private final PaystackPaymentRepository paymentRepository;
     private final ObjectMapper objectMapper;
     private final SanitizeLogging sanitize;
+    private final CouponValidationService couponValidationService;
+    private final CouponRepository couponRepository;
 
     private ReceiptEventPublisher receiptEventPublisher;
 
@@ -137,6 +142,9 @@ public class PaystackWebhookService {
 
                 paymentRepository.save(payment);
                 log.info("Updated payment {} to SUCCEEDED", sanitize.sanitizeLogging(reference));
+
+                // Record coupon usage if a coupon was applied
+                recordCouponUsageIfApplicable(payment);
 
                 // Generate receipt
                 generateReceipt(payment, transactionData);
@@ -367,5 +375,55 @@ public class PaystackWebhookService {
             log.debug("Could not extract payment method details: {}", e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * Record coupon usage if a coupon was applied to the payment.
+     */
+    private void recordCouponUsageIfApplicable(PaystackPayment payment) {
+        String couponCode = payment.getCouponCode();
+        if (couponCode == null || couponCode.isBlank()) {
+            return;
+        }
+
+        try {
+            log.info("Recording coupon usage for code: {} on payment: {}",
+                    sanitize.sanitizeLogging(couponCode),
+                    sanitize.sanitizeLogging(payment.getReference()));
+
+            Coupon coupon = couponRepository.findByCode(couponCode.toUpperCase())
+                    .orElse(null);
+
+            if (coupon == null) {
+                log.warn("Coupon {} not found when trying to record usage for payment {}",
+                        sanitize.sanitizeLogging(couponCode),
+                        sanitize.sanitizeLogging(payment.getReference()));
+                return;
+            }
+
+            User user = payment.getUser();
+            BigDecimal originalAmount = payment.getOriginalAmount() != null
+                    ? payment.getOriginalAmount()
+                    : payment.getAmount();
+            BigDecimal finalAmount = payment.getAmount();
+
+            couponValidationService.recordCouponUsage(
+                    coupon,
+                    user,
+                    originalAmount,
+                    finalAmount,
+                    payment.getReference(),
+                    payment.getPlanCode());
+
+            log.info("Successfully recorded coupon usage for {} on payment {}",
+                    sanitize.sanitizeLogging(couponCode),
+                    sanitize.sanitizeLogging(payment.getReference()));
+
+        } catch (Exception e) {
+            log.error("Failed to record coupon usage for payment {}: {}",
+                    sanitize.sanitizeLogging(payment.getReference()),
+                    e.getMessage());
+            // Don't rethrow - coupon usage recording failure shouldn't fail the webhook
+        }
     }
 }

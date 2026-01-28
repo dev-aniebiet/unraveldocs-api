@@ -1,7 +1,7 @@
 package com.extractor.unraveldocs.coupon.controller;
 
 import com.extractor.unraveldocs.coupon.dto.CouponData;
-import com.extractor.unraveldocs.coupon.dto.CouponUsageData;
+import com.extractor.unraveldocs.coupon.dto.response.CouponUsageResponse;
 import com.extractor.unraveldocs.coupon.dto.request.BulkCouponGenerationRequest;
 import com.extractor.unraveldocs.coupon.dto.request.CreateCouponRequest;
 import com.extractor.unraveldocs.coupon.dto.request.UpdateCouponRequest;
@@ -71,7 +71,8 @@ public class AdminCouponController {
             @PathVariable String id,
             @Valid @RequestBody UpdateCouponRequest request,
             @AuthenticationPrincipal User user) {
-        log.info("Admin {} updating coupon: {}", sanitizer.sanitizeLogging(user.getEmail()), sanitizer.sanitizeLogging(id));
+        log.info("Admin {} updating coupon: {}", sanitizer.sanitizeLogging(user.getEmail()),
+                sanitizer.sanitizeLogging(id));
         UnravelDocsResponse<CouponData> response = couponService.updateCoupon(id, request, user);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
@@ -83,7 +84,8 @@ public class AdminCouponController {
     public ResponseEntity<UnravelDocsResponse<Void>> deactivateCoupon(
             @PathVariable String id,
             @AuthenticationPrincipal User user) {
-        log.info("Admin {} deactivating coupon: {}", sanitizer.sanitizeLogging(user.getEmail()), sanitizer.sanitizeLogging(id));
+        log.info("Admin {} deactivating coupon: {}", sanitizer.sanitizeLogging(user.getEmail()),
+                sanitizer.sanitizeLogging(id));
         UnravelDocsResponse<Void> response = couponService.deactivateCoupon(id, user);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
@@ -115,11 +117,11 @@ public class AdminCouponController {
      * Gets usage details for a coupon.
      */
     @GetMapping("/{id}/usage")
-    public ResponseEntity<UnravelDocsResponse<List<CouponUsageData>>> getCouponUsage(
+    public ResponseEntity<UnravelDocsResponse<CouponUsageResponse>> getCouponUsage(
             @PathVariable String id,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        UnravelDocsResponse<List<CouponUsageData>> response = couponService.getCouponUsage(id, page, size);
+        UnravelDocsResponse<CouponUsageResponse> response = couponService.getCouponUsage(id, page, size);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 

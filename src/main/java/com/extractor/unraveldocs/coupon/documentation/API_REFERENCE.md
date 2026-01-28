@@ -335,24 +335,42 @@ GET /admin/coupons/{couponId}/usage
 
 ```json
 {
+  "statusCode": 200,
   "status": "success",
+  "message": "Coupon usage retrieved successfully",
   "data": {
     "usages": [
       {
-        "id": "usage-id",
+        "id": "ff7f428d-eea2-468a-a237-c30879d26792",
         "user": {
-          "id": "user-id",
-          "email": "user@example.com"
+          "id": "37182e20-ed95-40aa-acdd-3afb1f8d0a5a",
+          "email": "user-email@email.com",
+          "name": "William French"
         },
-        "originalAmount": 99.00,
-        "discountAmount": 19.80,
-        "finalAmount": 79.20,
-        "subscriptionPlan": "PRO_MONTHLY",
-        "usedAt": "2026-01-25T10:30:00Z"
+        "originalAmount": 1395000.00,
+        "discountAmount": 279000.00,
+        "finalAmount": 1116000.00,
+        "subscriptionPlan": null,
+        "paymentReference": "PAY_275C8A26221343FC",
+        "usedAt": "2026-01-28T10:19:55.537682Z"
+      },
+      {
+        "id": "c60f1a26-3de0-4e20-9af0-d0aa7482c6fa",
+        "user": {
+          "id": "3e3c6fc7-e48b-4682-ab54-0e9375a039b8",
+          "email": "user-email@email.com",
+          "name": "Michael Whyte"
+        },
+        "originalAmount": 1395000.00,
+        "discountAmount": 279000.00,
+        "finalAmount": 1116000.00,
+        "subscriptionPlan": null,
+        "paymentReference": "PAY_209C92D0845C4888",
+        "usedAt": "2026-01-28T10:14:39.234937Z"
       }
     ],
-    "totalUsageCount": 150,
-    "totalDiscountAmount": 2970.00
+    "totalUsageCount": 2,
+    "totalDiscountAmount": 558000.00
   }
 }
 ```
@@ -376,20 +394,26 @@ GET /admin/coupons/{couponId}/analytics
 
 ```json
 {
+  "statusCode": 200,
   "status": "success",
+  "message": "Analytics retrieved successfully",
   "data": {
-    "couponId": "550e8400-e29b-41d4-a716-446655440000",
-    "code": "BLACKFRIDAY20",
-    "totalRedemptions": 150,
-    "uniqueUsers": 148,
-    "totalDiscount": 2970.00,
-    "averageDiscount": 19.80,
-    "conversionRate": 15.2,
-    "dailyUsage": [
-      { "date": "2026-11-20", "count": 25 },
-      { "date": "2026-11-21", "count": 32 },
-      { "date": "2026-11-22", "count": 28 }
-    ]
+    "couponId": "27f09844-39ec-4354-9038-e9deeb6c81bc",
+    "couponCode": "AHXQ1PF8",
+    "totalUsageCount": 2,
+    "uniqueUsersCount": 2,
+    "totalDiscountAmount": 558000.00,
+    "totalOriginalAmount": 2790000.00,
+    "totalFinalAmount": 2232000.00,
+    "revenueImpact": 2232000.00,
+    "averageDiscountPerTransaction": 279000.00,
+    "redemptionRate": 0.0,
+    "potentialRecipientsCount": 0,
+    "usageBySubscriptionPlan": null,
+    "usageByRecipientCategory": null,
+    "dailyAnalytics": [],
+    "startDate": "2026-01-20",
+    "endDate": "2026-01-28"
   }
 }
 ```

@@ -1,11 +1,11 @@
 package com.extractor.unraveldocs.coupon.service.impl;
 
 import com.extractor.unraveldocs.coupon.dto.CouponData;
-import com.extractor.unraveldocs.coupon.dto.CouponUsageData;
 import com.extractor.unraveldocs.coupon.dto.request.CreateCouponRequest;
 import com.extractor.unraveldocs.coupon.dto.request.UpdateCouponRequest;
 import com.extractor.unraveldocs.coupon.dto.response.CouponAnalyticsData;
 import com.extractor.unraveldocs.coupon.dto.response.CouponListData;
+import com.extractor.unraveldocs.coupon.dto.response.CouponUsageResponse;
 import com.extractor.unraveldocs.coupon.enums.RecipientCategory;
 import com.extractor.unraveldocs.coupon.helpers.CouponCodeGenerator;
 import com.extractor.unraveldocs.coupon.helpers.CouponMapper;
@@ -268,15 +268,39 @@ public class CouponServiceImpl implements CouponService {
     }
 
     @Override
-    public UnravelDocsResponse<List<CouponUsageData>> getCouponUsage(String couponId, int page, int size) {
+    public UnravelDocsResponse<CouponUsageResponse> getCouponUsage(String couponId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "usedAt"));
         Page<CouponUsage> usagePage = couponUsageRepository.findByCouponId(couponId, pageable);
 
-        List<CouponUsageData> usageData = usagePage.getContent().stream()
-                .map(couponMapper::toUsageData)
+        // Convert to new response format with nested user object
+        List<CouponUsageResponse.UsageEntry> usageEntries = usagePage.getContent().stream()
+                .map(usage -> CouponUsageResponse.UsageEntry.builder()
+                        .id(usage.getId())
+                        .user(CouponUsageResponse.UserInfo.builder()
+                                .id(usage.getUser().getId())
+                                .email(usage.getUser().getEmail())
+                                .name(usage.getUser().getFirstName() + " " + usage.getUser().getLastName())
+                                .build())
+                        .originalAmount(usage.getOriginalAmount())
+                        .discountAmount(usage.getDiscountAmount())
+                        .finalAmount(usage.getFinalAmount())
+                        .subscriptionPlan(usage.getSubscriptionPlan())
+                        .paymentReference(usage.getPaymentReference())
+                        .usedAt(usage.getUsedAt() != null ? usage.getUsedAt().toString() : null)
+                        .build())
                 .collect(Collectors.toList());
 
-        return responseBuilder.buildUserResponse(usageData, HttpStatus.OK, "Coupon usage retrieved successfully");
+        // Calculate totals
+        BigDecimal totalDiscount = couponUsageRepository.sumDiscountAmountByCouponId(couponId);
+        int totalUsageCount = (int) usagePage.getTotalElements();
+
+        CouponUsageResponse responseData = CouponUsageResponse.builder()
+                .usages(usageEntries)
+                .totalUsageCount(totalUsageCount)
+                .totalDiscountAmount(totalDiscount != null ? totalDiscount : BigDecimal.ZERO)
+                .build();
+
+        return responseBuilder.buildUserResponse(responseData, HttpStatus.OK, "Coupon usage retrieved successfully");
     }
 
     @Override
@@ -339,7 +363,8 @@ public class CouponServiceImpl implements CouponService {
             availableCoupons.add(couponMapper.toCouponData(assignment.getCoupon()));
         }
 
-        // TODO: Also get coupons matching user's category (based on subscription, activity, etc.)
+        // TODO: Also get coupons matching user's category (based on subscription,
+        // activity, etc.)
 
         return responseBuilder.buildUserResponse(availableCoupons, HttpStatus.OK, "Available coupons retrieved");
     }

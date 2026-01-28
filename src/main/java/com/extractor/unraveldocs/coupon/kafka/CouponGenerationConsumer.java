@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -81,7 +80,7 @@ public class CouponGenerationConsumer {
             // Generate coupons
             for (int i = 0; i < request.getQuantity(); i++) {
                 try {
-                    CreateCouponRequest couponRequest = buildCouponRequest(request, template, i);
+                    CreateCouponRequest couponRequest = buildCouponRequest(request, template);
                     var response = couponService.createCoupon(couponRequest, createdBy);
 
                     if (response.getStatusCode() == 201) {
@@ -124,7 +123,7 @@ public class CouponGenerationConsumer {
     }
 
     private CreateCouponRequest buildCouponRequest(
-            BulkCouponGenerationRequest request, CouponTemplate template, int index) {
+            BulkCouponGenerationRequest request, CouponTemplate template) {
 
         CreateCouponRequest.CreateCouponRequestBuilder builder = CreateCouponRequest.builder();
 

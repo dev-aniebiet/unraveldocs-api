@@ -1,5 +1,7 @@
 package com.extractor.unraveldocs.exceptions.global;
 
+import com.extractor.unraveldocs.coupon.exception.CouponNotFoundException;
+import com.extractor.unraveldocs.coupon.exception.InvalidCouponException;
 import com.extractor.unraveldocs.exceptions.custom.*;
 import com.extractor.unraveldocs.exceptions.response.ErrorResponse;
 import lombok.NonNull;
@@ -32,7 +34,8 @@ public class GlobalExceptionHandler {
                 fieldName = ((FieldError) error).getField();
             } else {
                 // Handle class-level constraints like @PasswordMatches
-                fieldName = error.getObjectName().equals("signUpRequestDto") ? "confirmPassword" : error.getObjectName();
+                fieldName = error.getObjectName().equals("signUpRequestDto") ? "confirmPassword"
+                        : error.getObjectName();
             }
 
             if ("role".equals(fieldName) && Objects.requireNonNull(error.getCode()).startsWith("typeMismatch")) {
@@ -83,6 +86,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
+    @ExceptionHandler(InvalidCouponException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<@NonNull ErrorResponse> handleInvalidCouponException(InvalidCouponException ex) {
+        errorResponse.setStatusCode(HttpStatus.BAD_REQUEST.value());
+        errorResponse.setError("Invalid Coupon");
+        errorResponse.setMessage(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(CouponNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ResponseEntity<@NonNull ErrorResponse> handleCouponNotFoundException(CouponNotFoundException ex) {
+        errorResponse.setStatusCode(HttpStatus.NOT_FOUND.value());
+        errorResponse.setError("Coupon Not Found");
+        errorResponse.setMessage(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
     @ExceptionHandler(UnauthorizedException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ResponseEntity<@NonNull ErrorResponse> handleUnauthorizedException(UnauthorizedException ex) {
@@ -112,15 +133,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     @ResponseStatus(HttpStatus.CONTENT_TOO_LARGE)
-    public ResponseEntity<@NonNull ErrorResponse> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex) {
-        // Create a new ErrorResponse instance for thread safety if errorResponse is a shared field
+    public ResponseEntity<@NonNull ErrorResponse> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException ex) {
+        // Create a new ErrorResponse instance for thread safety if errorResponse is a
+        // shared field
         ErrorResponse specificErrorResponse = new ErrorResponse();
         specificErrorResponse.setStatusCode(HttpStatus.CONTENT_TOO_LARGE.value());
         specificErrorResponse.setError(HttpStatus.CONTENT_TOO_LARGE.getReasonPhrase());
         specificErrorResponse.setMessage(
-                ex.getMessage() != null ? ex.getMessage() + " (Max size: 10MB)" :
-                "Maximum upload size of " + ex.getMaxUploadSize() + " bytes exceeded."
-                );
+                ex.getMessage() != null ? ex.getMessage() + " (Max size: 10MB)"
+                        : "Maximum upload size of " + ex.getMaxUploadSize() + " bytes exceeded.");
         return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(specificErrorResponse);
     }
 
@@ -135,7 +157,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<@NonNull ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+    public ResponseEntity<@NonNull ErrorResponse> handleHttpMessageNotReadableException(
+            HttpMessageNotReadableException ex) {
         String message = "Invalid request payload.";
         Throwable cause = ex.getCause();
         if (cause != null && cause.getMessage() != null) {

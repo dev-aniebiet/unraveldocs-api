@@ -44,6 +44,7 @@ public class NotificationPreferencesServiceImpl implements NotificationPreferenc
         preferences.setStorageNotifications(request.getStorageNotifications());
         preferences.setSubscriptionNotifications(request.getSubscriptionNotifications());
         preferences.setTeamNotifications(request.getTeamNotifications());
+        preferences.setCouponNotifications(request.getCouponNotifications());
 
         if (request.getQuietHoursEnabled() != null) {
             preferences.setQuietHoursEnabled(request.getQuietHoursEnabled());
@@ -121,6 +122,7 @@ public class NotificationPreferencesServiceImpl implements NotificationPreferenc
                 .storageNotifications(preferences.isStorageNotifications())
                 .subscriptionNotifications(preferences.isSubscriptionNotifications())
                 .teamNotifications(preferences.isTeamNotifications())
+                .couponNotifications(preferences.isCouponNotifications())
                 .quietHoursEnabled(preferences.isQuietHoursEnabled())
                 .quietHoursStart(preferences.getQuietHoursStart())
                 .quietHoursEnd(preferences.getQuietHoursEnd())

@@ -31,4 +31,50 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
          */
         List<UserSubscription> findByTrialEndsAtBetweenAndStatusEquals(
                         OffsetDateTime startDate, OffsetDateTime endDate, String status);
+
+        // ========== Coupon Notification Query Methods (Performance Optimized)
+        // ==========
+
+        /**
+         * Find all active paid subscriptions (non-FREE plans with ACTIVE status).
+         * Used for targeting paid users with coupons.
+         */
+        @Query("SELECT us FROM UserSubscription us JOIN FETCH us.plan p JOIN FETCH us.user " +
+                        "WHERE UPPER(us.status) = 'ACTIVE' AND p.name <> com.extractor.unraveldocs.subscription.datamodel.SubscriptionPlans.FREE")
+        List<UserSubscription> findActivePaidSubscriptions();
+
+        /**
+         * Find active subscriptions by plan name.
+         * Used for targeting users on specific plans with coupons.
+         */
+        @Query("SELECT us FROM UserSubscription us JOIN FETCH us.plan p JOIN FETCH us.user " +
+                        "WHERE UPPER(us.status) = 'ACTIVE' AND UPPER(CAST(p.name AS string)) = UPPER(:planName)")
+        List<UserSubscription> findActiveSubscriptionsByPlanName(@Param("planName") String planName);
+
+        /**
+         * Find free tier users with high activity (OCR pages used >= 20).
+         * Used for targeting engaged free users with upgrade coupons.
+         */
+        @Query("SELECT us FROM UserSubscription us JOIN FETCH us.plan p JOIN FETCH us.user " +
+                        "WHERE p.name = com.extractor.unraveldocs.subscription.datamodel.SubscriptionPlans.FREE " +
+                        "AND us.ocrPagesUsed IS NOT NULL AND us.ocrPagesUsed >= 20")
+        List<UserSubscription> findFreeTierWithHighActivity();
+
+        /**
+         * Find recently expired subscriptions (expired within 3 months).
+         * Used for targeting churned users with win-back coupons.
+         */
+        @Query("SELECT us FROM UserSubscription us JOIN FETCH us.user " +
+                        "WHERE UPPER(us.status) <> 'ACTIVE' " +
+                        "AND us.currentPeriodEnd IS NOT NULL AND us.currentPeriodEnd > :threeMonthsAgo")
+        List<UserSubscription> findRecentlyExpiredSubscriptions(@Param("threeMonthsAgo") OffsetDateTime threeMonthsAgo);
+
+        /**
+         * Find high activity subscriptions (using > 50% of plan's OCR page limit).
+         * Used for targeting power users with retention coupons.
+         */
+        @Query("SELECT us FROM UserSubscription us JOIN FETCH us.plan p JOIN FETCH us.user " +
+                        "WHERE us.ocrPagesUsed IS NOT NULL AND p.ocrPageLimit IS NOT NULL AND p.ocrPageLimit > 0 " +
+                        "AND (CAST(us.ocrPagesUsed AS double) / CAST(p.ocrPageLimit AS double)) > 0.5")
+        List<UserSubscription> findHighActivitySubscriptions();
 }
