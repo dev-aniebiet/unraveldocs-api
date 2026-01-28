@@ -66,8 +66,7 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
          */
         @Query("SELECT us FROM UserSubscription us JOIN FETCH us.user " +
                         "WHERE UPPER(us.status) <> 'ACTIVE' " +
-                        "AND us.currentPeriodEnd IS NOT NULL AND us.currentPeriodEnd > :threeMonthsAgo" +
-                        "AND us.currentPeriodEnd <= CURRENT_TIMESTAMP")
+                        "AND us.currentPeriodEnd IS NOT NULL AND us.currentPeriodEnd > :threeMonthsAgo")
         List<UserSubscription> findRecentlyExpiredSubscriptions(@Param("threeMonthsAgo") OffsetDateTime threeMonthsAgo);
 
         /**
