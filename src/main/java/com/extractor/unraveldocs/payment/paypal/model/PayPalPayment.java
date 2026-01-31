@@ -25,7 +25,8 @@ import java.time.OffsetDateTime;
         @Index(name = "idx_paypal_capture_id", columnList = "capture_id"),
         @Index(name = "idx_paypal_payment_user_id", columnList = "user_id"),
         @Index(name = "idx_paypal_payment_status", columnList = "status"),
-        @Index(name = "idx_paypal_payment_created_at", columnList = "created_at")
+        @Index(name = "idx_paypal_payment_created_at", columnList = "created_at"),
+        @Index(name = "idx_paypal_coupon_code", columnList = "coupon_code")
 })
 @NoArgsConstructor
 @AllArgsConstructor
@@ -120,6 +121,24 @@ public class PayPalPayment {
 
     @Column(name = "failure_message", columnDefinition = "TEXT")
     private String failureMessage;
+
+    /**
+     * Coupon code applied to this payment.
+     */
+    @Column(name = "coupon_code", length = 50)
+    private String couponCode;
+
+    /**
+     * Original amount before coupon discount.
+     */
+    @Column(name = "original_amount", precision = 10, scale = 2)
+    private BigDecimal originalAmount;
+
+    /**
+     * Discount amount from coupon.
+     */
+    @Column(name = "discount_amount", precision = 10, scale = 2)
+    private BigDecimal discountAmount;
 
     @Column(name = "metadata", columnDefinition = "TEXT")
     private String metadata;

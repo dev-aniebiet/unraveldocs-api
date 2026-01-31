@@ -41,6 +41,8 @@ public class UpdatePreferencesRequest {
     @NotNull(message = "Team notifications flag is required")
     private Boolean teamNotifications;
 
+    private Boolean couponNotifications = Boolean.TRUE;
+
     private Boolean quietHoursEnabled;
 
     private LocalTime quietHoursStart;

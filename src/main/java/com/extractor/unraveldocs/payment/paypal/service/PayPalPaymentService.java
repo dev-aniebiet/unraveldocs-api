@@ -1,5 +1,10 @@
 package com.extractor.unraveldocs.payment.paypal.service;
 
+import com.extractor.unraveldocs.coupon.dto.request.ApplyCouponRequest;
+import com.extractor.unraveldocs.coupon.dto.response.DiscountCalculationData;
+import com.extractor.unraveldocs.coupon.exception.InvalidCouponException;
+import com.extractor.unraveldocs.coupon.service.CouponValidationService;
+import com.extractor.unraveldocs.documents.utils.SanitizeLogging;
 import com.extractor.unraveldocs.payment.enums.PaymentStatus;
 import com.extractor.unraveldocs.payment.enums.PaymentType;
 import com.extractor.unraveldocs.payment.paypal.config.PayPalConfig;
@@ -27,6 +32,7 @@ import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,8 +49,10 @@ public class PayPalPaymentService {
     private final PayPalAuthService authService;
     private final PayPalCustomerService customerService;
     private final PayPalPaymentRepository paymentRepository;
+    private final CouponValidationService couponValidationService;
     private final RestClient paypalRestClient;
     private final ObjectMapper objectMapper;
+    private final SanitizeLogging sanitizer;
 
     /**
      * Create a PayPal order for payment.
@@ -52,30 +60,64 @@ public class PayPalPaymentService {
     @Transactional
     public PayPalOrderResponse createOrder(User user, CreateOrderRequest request) {
         log.info("Creating PayPal order for user: {}, amount: {} {}",
-                user.getId(), request.getAmount(), request.getCurrency());
+                sanitizer.sanitizeLogging(user.getId()),
+                sanitizer.sanitizeLoggingObject(request.getAmount()),
+                sanitizer.sanitizeLogging(request.getCurrency()));
 
         try {
             // Ensure customer exists
             PayPalCustomer customer = customerService.getOrCreateCustomer(user);
+
+            // Track coupon discount info
+            BigDecimal originalAmount = request.getAmount();
+            BigDecimal finalAmount = request.getAmount();
+            BigDecimal discountAmount = BigDecimal.ZERO;
+            String appliedCouponCode = null;
+
+            // Validate and apply coupon if provided
+            if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
+                ApplyCouponRequest couponRequest = new ApplyCouponRequest();
+                couponRequest.setCouponCode(request.getCouponCode());
+                couponRequest.setAmount(originalAmount);
+
+                DiscountCalculationData discountData = couponValidationService.applyCouponToAmount(couponRequest, user);
+
+                // Check minimum purchase requirement
+                if (discountData.getMinPurchaseAmount() != null
+                        && !discountData.isMinPurchaseRequirementMet()) {
+                    throw new InvalidCouponException(
+                            String.format("Minimum purchase amount of %s required for this coupon",
+                                    discountData.getMinPurchaseAmount()));
+                }
+
+                finalAmount = discountData.getFinalAmount();
+                discountAmount = discountData.getDiscountAmount();
+                appliedCouponCode = discountData.getCouponCode();
+
+                log.info("Coupon applied: original={}, discount={}, final={}",
+                        sanitizer.sanitizeLoggingObject(originalAmount),
+                        sanitizer.sanitizeLoggingObject(discountAmount),
+                        sanitizer.sanitizeLoggingObject(finalAmount));
+            }
 
             // Build order request
             String currency = request.getCurrency() != null ? request.getCurrency() : payPalConfig.getDefaultCurrency();
             String returnUrl = request.getReturnUrl() != null ? request.getReturnUrl() : payPalConfig.getReturnUrl();
             String cancelUrl = request.getCancelUrl() != null ? request.getCancelUrl() : payPalConfig.getCancelUrl();
 
-            Map<String, Object> orderRequest = Map.of(
-                    "intent", request.getIntent(),
-                    "purchase_units", List.of(Map.of(
-                            "amount", Map.of(
-                                    "currency_code", currency,
-                                    "value", request.getAmount().toString()),
-                            "description", request.getDescription() != null ? request.getDescription() : "Payment")),
-                    "application_context", Map.of(
-                            "return_url", returnUrl,
-                            "cancel_url", cancelUrl,
-                            "brand_name", "UnravelDocs",
-                            "landing_page", "LOGIN",
-                            "user_action", "PAY_NOW"));
+            Map<String, Object> orderRequest = new HashMap<>();
+            orderRequest.put("intent", request.getIntent());
+            orderRequest.put("purchase_units", List.of(Map.of(
+                    "amount", Map.of(
+                            "currency_code", currency,
+                            "value", finalAmount.toString()),
+                    "description", request.getDescription() != null ? request.getDescription() : "Payment")));
+            orderRequest.put("application_context", Map.of(
+                    "return_url", returnUrl,
+                    "cancel_url", cancelUrl,
+                    "brand_name", "UnravelDocs",
+                    "landing_page", "LOGIN",
+                    "user_action", "PAY_NOW"));
 
             String response = paypalRestClient.post()
                     .uri("/v2/checkout/orders")
@@ -87,12 +129,16 @@ public class PayPalPaymentService {
             JsonNode orderJson = objectMapper.readTree(response);
             PayPalOrderResponse orderResponse = parseOrderResponse(orderJson);
 
-            // Record the payment
-            recordPayment(user, customer, orderResponse, request);
+            // Record the payment with coupon info
+            recordPayment(user, customer, orderResponse, request,
+                    originalAmount, finalAmount, discountAmount, appliedCouponCode);
 
-            log.info("Created PayPal order: {}", orderResponse.getId());
+            log.info("Created PayPal order: {}", sanitizer.sanitizeLogging(orderResponse.getId()));
             return orderResponse;
 
+        } catch (InvalidCouponException e) {
+            log.warn("Coupon validation failed for user {}: {}", sanitizer.sanitizeLogging(user.getId()), e.getMessage());
+            throw e;
         } catch (PayPalPaymentException e) {
             throw e;
         } catch (Exception e) {
@@ -106,7 +152,7 @@ public class PayPalPaymentService {
      */
     @Transactional
     public PayPalCaptureResponse captureOrder(String orderId) {
-        log.info("Capturing PayPal order: {}", orderId);
+        log.info("Capturing PayPal order: {}", sanitizer.sanitizeLogging(orderId));
 
         try {
             String response = paypalRestClient.post()
@@ -121,7 +167,9 @@ public class PayPalPaymentService {
             // Update payment record
             updatePaymentAfterCapture(orderId, captureResponse);
 
-            log.info("Captured PayPal order: {}, status: {}", orderId, captureResponse.getStatus());
+            log.info("Captured PayPal order: {}, status: {}",
+                    sanitizer.sanitizeLogging(orderId),
+                    sanitizer.sanitizeLogging(captureResponse.getStatus()));
             return captureResponse;
 
         } catch (PayPalPaymentException e) {
@@ -136,7 +184,7 @@ public class PayPalPaymentService {
      * Get order details from PayPal.
      */
     public PayPalOrderResponse getOrderDetails(String orderId) {
-        log.debug("Getting PayPal order details: {}", orderId);
+        log.debug("Getting PayPal order details: {}", sanitizer.sanitizeLogging(orderId));
 
         try {
             String response = paypalRestClient.get()
@@ -159,7 +207,7 @@ public class PayPalPaymentService {
      */
     @Transactional
     public PayPalRefundResponse refundPayment(RefundOrderRequest request) {
-        log.info("Refunding PayPal capture: {}", request.getCaptureId());
+        log.info("Refunding PayPal capture: {}", sanitizer.sanitizeLogging(request.getCaptureId()));
 
         try {
             Map<String, Object> refundRequest = buildRefundRequest(request);
@@ -177,7 +225,9 @@ public class PayPalPaymentService {
             // Update payment record
             updatePaymentAfterRefund(request.getCaptureId(), refundResponse);
 
-            log.info("Refunded PayPal capture: {}, status: {}", request.getCaptureId(), refundResponse.getStatus());
+            log.info("Refunded PayPal capture: {}, status: {}",
+                    sanitizer.sanitizeLogging(request.getCaptureId()),
+                    sanitizer.sanitizeLogging(refundResponse.getStatus()));
             return refundResponse;
 
         } catch (PayPalPaymentException e) {
@@ -237,21 +287,27 @@ public class PayPalPaymentService {
                 payment.setCompletedAt(OffsetDateTime.now());
             }
             paymentRepository.save(payment);
-            log.info("Updated payment {} status to {}", payment.getId(), status);
+            log.info("Updated payment {} status to {}",
+                    sanitizer.sanitizeLogging(payment.getId()),
+                    sanitizer.sanitizeLoggingObject(status));
         });
     }
 
     // ==================== Private Helper Methods ====================
 
     private void recordPayment(User user, PayPalCustomer customer,
-            PayPalOrderResponse orderResponse, CreateOrderRequest request) {
+            PayPalOrderResponse orderResponse, CreateOrderRequest request,
+            BigDecimal originalAmount, BigDecimal finalAmount, BigDecimal discountAmount, String couponCode) {
         PayPalPayment payment = PayPalPayment.builder()
                 .user(user)
                 .paypalCustomer(customer)
                 .orderId(orderResponse.getId())
                 .paymentType(PaymentType.ONE_TIME)
                 .status(PaymentStatus.PENDING)
-                .amount(request.getAmount())
+                .amount(finalAmount) // Store the discounted amount
+                .originalAmount(originalAmount)
+                .discountAmount(discountAmount)
+                .couponCode(couponCode)
                 .currency(request.getCurrency() != null ? request.getCurrency() : payPalConfig.getDefaultCurrency())
                 .intent(request.getIntent())
                 .description(request.getDescription())
@@ -311,7 +367,7 @@ public class PayPalPaymentService {
             builder.links(links);
         }
 
-        if (orderJson.has("purchase_units") && orderJson.get("purchase_units").size() > 0) {
+        if (orderJson.has("purchase_units") && !orderJson.get("purchase_units").isEmpty()) {
             JsonNode unit = orderJson.get("purchase_units").get(0);
             if (unit.has("amount")) {
                 builder.amount(new BigDecimal(unit.get("amount").get("value").asText()));
@@ -327,7 +383,7 @@ public class PayPalPaymentService {
                 .orderId(orderId)
                 .status(captureJson.get("status").asText());
 
-        if (captureJson.has("purchase_units") && captureJson.get("purchase_units").size() > 0) {
+        if (captureJson.has("purchase_units") && !captureJson.get("purchase_units").isEmpty()) {
             JsonNode unit = captureJson.get("purchase_units").get(0);
             if (unit.has("payments") && unit.get("payments").has("captures")) {
                 JsonNode capture = unit.get("payments").get("captures").get(0);

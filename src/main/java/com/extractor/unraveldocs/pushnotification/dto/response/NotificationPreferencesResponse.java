@@ -26,6 +26,7 @@ public class NotificationPreferencesResponse {
     private boolean storageNotifications;
     private boolean subscriptionNotifications;
     private boolean teamNotifications;
+    private boolean couponNotifications;
     private boolean quietHoursEnabled;
     private LocalTime quietHoursStart;
     private LocalTime quietHoursEnd;

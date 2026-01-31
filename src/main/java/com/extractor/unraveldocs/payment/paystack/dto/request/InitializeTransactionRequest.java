@@ -67,4 +67,12 @@ public class InitializeTransactionRequest {
 
     @JsonProperty("bearer")
     private String bearer;
+
+    /**
+     * Optional coupon code to apply discount to this transaction.
+     * If provided, the coupon will be validated and the discounted amount
+     * will be sent to Paystack.
+     */
+    @JsonProperty("coupon_code")
+    private String couponCode;
 }
