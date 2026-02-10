@@ -103,7 +103,9 @@ public class StorageAllocationService {
         // Use monthly documents uploaded count (resets monthly) instead of total document count
         int currentMonthlyCount = subscription.getMonthlyDocumentsUploaded() != null
                 ? subscription.getMonthlyDocumentsUploaded() : 0;
-        if (currentMonthlyCount + newDocumentsCount > documentUploadLimit) {
+        // Use long arithmetic to prevent integer overflow
+        long totalDocuments = (long) currentMonthlyCount + (long) newDocumentsCount;
+        if (totalDocuments > documentUploadLimit) {
             throw new StorageQuotaExceededException(
                     "Monthly document upload limit exceeded. Limit: " + documentUploadLimit +
                     ", Used this month: " + currentMonthlyCount + ", Attempting to add: " + newDocumentsCount +
